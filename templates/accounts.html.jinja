@@ -1,0 +1,15 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<p>This is the accounts page.</p>
+<ul>
+{% for acc in accs.card_numbers.values() %}
+    <li>{{ acc.name }}
+        <ul>
+            <li>ID: {{ acc.id }}</li>
+            <li>${{ acc.cash }}</li>
+        </ul>
+    </li>
+{% endfor %}
+</ul>
+{% endblock content %}
