@@ -15,12 +15,14 @@ URLS = {
 
 app = Flask(__name__)
 
-
 @app.route('/')
 def home_page():
     return render_template('home.html.jinja', urls=URLS)
 
 @app.route(f'/{URLS["Accounts"]}')
+def account_page():
+    return render_template('accounts.html.jinja', urls=URLS, accs=managed_accs)
+
 @app.route(f'/{URLS["Transfer"]}')
 @app.route(f'/{URLS["Change Cash"]}')
 @app.route(f'/{URLS["Properties"]}')
@@ -29,3 +31,13 @@ def home_page():
 @app.route(f'/{URLS["Help"]}')
 def placeholder_page():
     return render_template('sidebar.html.jinja', urls=URLS)
+
+
+if __name__ == 'wsgi':
+    managed_accs = AccountManager()
+    managed_accs.new('id_num', 'card_holder')
+    managed_accs.new('asdf', 'Carson')
+    managed_accs.new('jkl;', 'Another Carson')
+
+if __name__ == '__main__':
+    print('Do not run this file directly with the Python interpreter. Use "flask run" instead.')
