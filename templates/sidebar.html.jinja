@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/normalize.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+        <title>{% block title %}Placeholder Page{% endblock %} - Monopoly Banking System</title>
+        {% endblock %}
+    </head>
+    <body>
+        <header>
+            <nav>
+                <a href="/"><img src="{{ url_for('static', filename='icons/home-2-line.svg') }}">Home</a>
+                <a href="/{{ urls['Accounts'] }}"><img src="{{ url_for('static', filename='icons/bank-line.svg') }}">{{ urls['Accounts'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Transfer'] }}"><img src="{{ url_for('static', filename='icons/exchange-line.svg') }}">{{ urls['Transfer'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Change Cash'] }}"><img src="{{ url_for('static', filename='icons/wallet-3-line.svg') }}">{{ urls['Change Cash'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Properties'] }}"><img src="{{ url_for('static', filename='icons/community-line.svg') }}">{{ urls['Properties'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Investments'] }}"><img src="{{ url_for('static', filename='icons/funds-line.svg') }}">{{ urls['Investments'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Auctions'] }}"><img src="{{ url_for('static', filename='icons/shopping-cart-fill.svg') }}">{{ urls['Auctions'].title().replace('-', ' ') }}</a>
+                <a href="/{{ urls['Help'] }}"><img src="{{ url_for('static', filename='icons/question-line.svg') }}">{{ urls['Help'].title().replace('-', ' ') }}</a>
+            </nav>
+        </header>
+        <main>
+        <h1>Monopoly Bank</h1>
+        {% block content %}
+        <p>Not yet implemented.</p>
+        {% endblock %}
+        </main>
+        <footer>
+        {% block footer %}
+        {% endblock %}
+        </footer>
+    </body>
+</html>
