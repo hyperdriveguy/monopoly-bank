@@ -1,20 +1,33 @@
-header {
-    height: 100%; /* Full-height: remove this if you want "auto" height */
-    width: min-content; /* Set the width of the sidebar */
-    position: fixed; /* Fixed Sidebar (stay in place on scroll) */
-    z-index: 1; /* Stay on top */
-    top: 0; /* Stay at the top */
-    left: 0;
-    background-color: #111; /* Black */
-    overflow-x: hidden; /* Disable horizontal scroll */
+body {
+    height: 100%;
 }
 
-nav {
-  padding: 10px 10px 20px 5px;
+.side-bar {
+    /* Full-height: remove this if you want "auto" height */
+    height: 100%;
+    /* Set the width of the sidebar */
+    width: max-content;
+    /* Fixed Sidebar (stay in place on scroll) */
+    position: fixed;
+    /* Stay on top */
+    z-index: 1;
+    top: 0;
+    left: 0;
+    /* Disable horizontal scroll */
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: #111;
+}
+
+.side-bar nav {
+    padding: 10px 10px 20px 5px;
+}
+
+.side-bar a {
+    padding: 6px 8px 6px 16px;
 }
 
 nav a {
-    padding: 6px 8px 6px 16px;
     text-align: center;
     text-decoration: none;
     font-size: 22px;
@@ -28,8 +41,10 @@ nav a:hover {
 }
 
 main {
-    margin-left: 160px; /* Same as the width of the sidebar */
+    /* Left margin same as the width of the sidebar */
+    /* This can't be set dynamically with pure CSS, so JS is used elsewhere */
     padding: 0px 10px;
+    overflow: hidden;
 }
 
 img {
@@ -38,10 +53,10 @@ img {
     margin-right: auto;
     width: 50%;
     filter: invert(100%) brightness(50%);
-  }  
+}
 
-/* On smaller screens, where height is less than 450px, change the style of the sidebar (less padding and a smaller font size) */
 @media screen and (max-width: 600px) {
-  /* nav {padding-top: 15px;} */
-  nav a {font-size: 12px;}
+    .side-bar a{
+        font-size: 10pt;
+    }
 }
