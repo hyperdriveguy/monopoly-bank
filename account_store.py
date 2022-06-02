@@ -44,8 +44,25 @@ class AccountManager:
     def exists(self, id_num):
         return id_num in self.card_numbers
     
+    @property
+    def num_accounts(self):
+        return len(self.card_numbers)
+    
     def query(self, id_num):
-        return self.card_numbers[id_num]
+        if self.exists(id_num):
+            return self.card_numbers[id_num]
+        return 'Account does not exist.'
+    
+    def search(self, query):
+
+        def match_in_query(acc):
+            name_match = query.lower() in acc.name.lower()
+            id_match = query.lower() in acc.id.lower()
+            return name_match or id_match
+        
+        if query.lower() in ('all', ''):
+            return self.card_numbers.values()
+        return tuple(filter(match_in_query, self.card_numbers.values()))
     
     def transfer(self, payer, payee, amount: int):
         paying_account = self.card_numbers[payer]
