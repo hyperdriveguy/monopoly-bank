@@ -6,11 +6,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/normalize.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+        {% block stylesheets %}{% endblock %}
         <title>{% block title %}Placeholder Page{% endblock %} - Monopoly Banking System</title>
         {% endblock %}
     </head>
     <body>
         <script src="{{ url_for('static', filename='js/set-margin.js') }}"></script>
+        {% block scripts %}{% endblock %}
             <div class="side-bar">
                 <nav>
                     <a href="/"><img src="{{ url_for('static', filename='icons/home-2-line.svg') }}">Home</a>
@@ -26,6 +28,7 @@
             <main>
             <h1>Monopoly Bank</h1>
             {% block content %}
+            <h2>Placeholder Page</h2>
             <p>Not yet implemented.</p>
             {% endblock %}
             </main>

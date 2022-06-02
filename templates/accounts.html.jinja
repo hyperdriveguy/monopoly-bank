@@ -1,15 +1,25 @@
 {% extends "sidebar.html.jinja" %}
 {% block title %}Accounts{% endblock %}
 {% block content %}
-<p>This is the accounts page.</p>
-<ul>
-{% for acc in accs.card_numbers.values() %}
-    <li>{{ acc.name }}
-        <ul>
-            <li>ID: {{ acc.id }}</li>
-            <li>${{ acc.cash }}</li>
-        </ul>
-    </li>
-{% endfor %}
-</ul>
+<h2>Accounts{% if not query %} - {{ num_results }}{% endif %}</h2>
+<form action="" method="post">
+    <input type="search" id="account-lookup-query" name="account-lookup-query" placeholder="Search for account..." required>
+    <input type="submit" value="Search">
+</form>
+<button id="new-account">New Account</button>
+<button id="del-account">Delete Account</button>
+{% if query %}
+<p>{{ num_results }} result{% if num_results != 1 %}s{% endif %} for search "{{ query }}".</p>
+{% endif%}
+<section class="account-list">
+    {% for acc in lookup %}
+    <a href="{{ acc.id }}" class="account-card">
+        <article>
+            <h3>{{ acc.name }}</h3>
+            <p>ID: {{ acc.id }}</p>
+            <p>${{ acc.cash }}</p>
+        </article>
+    </a>
+    {% endfor %}
+</section>
 {% endblock content %}
