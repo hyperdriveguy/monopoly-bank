@@ -1,5 +1,6 @@
 body {
     height: 100%;
+    text-align: center;
 }
 
 .side-bar {
@@ -30,7 +31,7 @@ body {
 nav a {
     text-align: center;
     text-decoration: none;
-    font-size: 22px;
+    font-size: 18px;
     color: #818181;
     display: block;
 }
@@ -55,8 +56,75 @@ img {
     filter: invert(100%) brightness(50%);
 }
 
+/* These rules are used for the accounts page */
+.account-list {
+    display: grid;
+    /* grid-template-columns: 1fr 1fr; */
+    gap: 1em;
+    margin: 1em auto;
+    width: 75%;
+}
+
+.account-card {
+    border: solid 2px black;
+    border-radius: 5px;
+    /* padding: 1em; */
+    min-width: min-content;
+    text-decoration: none;
+    color: #111;
+    text-align: left;
+}
+
+.account-card h3 {
+    text-align: center;
+    background-color: #111;
+    color: #818181;
+    padding: 0.5em;
+    margin: 0;
+}
+
+.account-card:hover h3 {
+    background-color: #818181;
+    color: #111;
+}
+
+.account-card p {
+    margin: 0.5em 1em;
+}
+
+.account-card:hover {
+    background-color: #111;
+    color: #818181;
+}
+
+@media screen and (min-width: 1484px) {
+    .account-list {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+@media screen and (min-width: 1056px) and (max-width: 1483px) {
+    .account-list {
+        grid-template-columns: 1fr 1fr;
+    }    
+}
+
 @media screen and (max-width: 600px) {
-    .side-bar a{
+    body, .side-bar a {
         font-size: 10pt;
+    }
+    .side-bar {
+        width: min-content;
+    }
+    .account-list {
+        margin: 1em 0;
+        width: 100%;
+        overflow: scroll;
+    }
+}
+
+@media screen and (max-width: 380px) {
+    body, .side-bar a {
+        font-size: 8pt;
     }
 }
