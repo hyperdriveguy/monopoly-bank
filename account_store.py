@@ -23,7 +23,6 @@ class Account:
         return amount
 
     def deposit(self, amount):
-        print('deposit', amount)
         if amount > 0:
             self.cash += amount
         else:
