@@ -119,7 +119,7 @@ form.account-card {
     pointer-events: initial;
 }
 
-form.account-card input {
+.account-card input {
     width: 95%;
 }
 
@@ -142,14 +142,22 @@ h3 input {
 
 .label-align label {
     margin-top: 0.75em;
+    width: max-content;
 }
 
 .label-align input {
     width: 100%;
     margin: 0.5em 1em;
 }
+.radio {
+    margin: 0.25em;
+}
 
-#account-forms {
+.radio input {
+    width: min-content;
+}
+
+.wide-forms {
     margin: 1em auto;
     max-width: 760px;
 }
