@@ -8,20 +8,39 @@
 <div id="account-actions">
     <button id="withdraw">Do Withdraw</button>
     <button id="deposit">Do Deposit</button>
-    <button id="transfer" onclick="window.location.href='/transfer';">Do Transfer</button>
+    <button id="transfer">Do Transfer</button>
 </div>
-<div id="account-forms">
+<div id="account-forms" class="wide-forms">
     <form action="" method="post" id="withdraw-form" class="account-card hidden">
         <h3>Withdraw</h3>
         <div class="label-align">
-            <label for="withdraw-amount">$</label><input type="number" id="withdraw-amount" name="withdraw-amount" value="0" required>
+            <label for="withdraw-amount">$</label><input type="number" id="withdraw-amount" name="withdraw-amount" autofocus required>
         </div>
         <input type="submit" value="Submit">
     </form>
     <form action="" method="post" id="deposit-form" class="account-card hidden">
         <h3>Deposit</h3>
         <div class="label-align">
-            <label for="deposit-amount">$</label><input type="number" id="deposit-amount" name="deposit-amount" value="0" required>
+            <label for="deposit-amount">$</label><input type="number" id="deposit-amount" name="deposit-amount" autofocus required>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+    <form action="" method="post" id="transfer-form" class="account-card hidden">
+        <h3>Do Transfer</h3>
+        <input type="hidden" name="account-1-id" value="{{ acc.id }}">
+        <div class="label-align">
+            <label for="account-2-id">Target account ID:</label><input type="text" id="account-2-id" name="account-2-id" placeholder="Target ID" required><br>
+        </div>
+        <div class="label-align">
+            <label for="transfer-amount">$</label><input type="number" id="transfer-amount" name="transfer-amount" autofocus required>
+        </div>
+        <div class="radio">
+            <input type="radio" id="transfer-1-2" name="transfer-direction" value="primary" required>
+            <label for="transfer-1-2">Transfer to</label>
+        </div>
+        <div class="radio">
+            <input type="radio" id="transfer-2-1" name="transfer-direction" value="reverse" required>
+            <label for="transfer-2-1">Transfer from</label>
         </div>
         <input type="submit" value="Submit">
     </form>

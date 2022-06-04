@@ -47,6 +47,20 @@ def urlify(id, reverse=False):
             id = id.replace(normal_char, url_char)
     return id
 
+def post_transfer(args):
+    info = ''
+    if 'transfer-amount' in args:
+        account1 = args['account-1-id']
+        account2 = args['account-2-id']
+        amount = args['transfer-amount']
+        direction = args['transfer-direction']
+        if direction == 'primary':
+            info = managed_accs.transfer(account1, account2, int(amount))
+        else:
+            info = managed_accs.transfer(account2, account1, int(amount))
+    return info
+
+
 @app.route('/')
 def home_page():
     return render_template('home.html.jinja', urls=URLS)
@@ -66,7 +80,9 @@ def accounts_main_page():
             int(request.form['new-acc-cash'])
         )
         info = managed_accs.new(new_id, new_name, new_cash)
-        #info = f'Created new account for {new_name}.'
+        if 'account-redirect' in request.form:
+            return redirect(f'/{URLS["Accounts"]}/{urlify(request.form["account-redirect"])}')
+        lookup = sorted(managed_accs.card_numbers.values(), key=lambda a: a.name)
     # Check if account was deleted
     elif 'del-acc-id' in request.form:
         managed_accs.delete(request.form['del-acc-id'])
@@ -87,7 +103,10 @@ def individual_account_page(id):
     id = urlify(id, reverse=True)
     print(id)
     target_account = managed_accs.query(id)
-    info = ''
+    if target_account == 'Account does not exist.':
+        return render_template('no_existing_account.html.jinja', urls=URLS, id=id)
+    # Check for money transferring
+    info = post_transfer(request.form)
     if 'withdraw-amount' in request.form:
         amount = target_account.withdraw(int(request.form['withdraw-amount']))
         info = f'Withdrew ${amount} from account.'
@@ -103,7 +122,11 @@ def change_cash():
         return redirect(f'/{URLS["Accounts"]}/{urlify(request.form["id-card"])}')
     return render_template('change_cash.html.jinja', urls=URLS)
 
-@app.route(f'/{URLS["Transfer"]}')
+@app.route(f'/{URLS["Transfer"]}', methods=['GET', 'POST'])
+def transfer():
+    info = post_transfer(request.form)
+    return render_template('transfer.html.jinja', urls=URLS, info=info)
+
 @app.route(f'/{URLS["Properties"]}')
 @app.route(f'/{URLS["Investments"]}')
 @app.route(f'/{URLS["Auctions"]}')
@@ -124,10 +147,6 @@ def bruh():
 
 if __name__ == 'wsgi':
     managed_accs = AccountManager()
-    managed_accs.new('id_num', 'card_holder')
-    managed_accs.new('asdf', 'Carson')
-    for i in range(100):
-        managed_accs.new(str(random.randint(0,1000000000000000000000000000)), f'{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}', random.randint(0, 1000))
     print('Server is ready!')
 
 if __name__ == '__main__':

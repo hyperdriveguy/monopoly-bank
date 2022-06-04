@@ -1,0 +1,30 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Transfer Funds{% endblock %}
+{% block content %}
+<h2>Transfer Funds</h2>
+<p>{{ info }}</p>
+<form action="" method="post" id="transfer-form" class="account-card wide-forms">
+    <h3>Do Transfer</h3>
+    <div class="label-align">
+        <label for="account-1-id">Account 1 ID:</label><input type="text" id="account-1-id" name="account-1-id" placeholder="ID for account 1" required><br>
+    </div>
+    <div class="label-align">
+        <label for="account-2-id">Account 2 ID:</label><input type="text" id="account-2-id" name="account-2-id" placeholder="ID for account 2" required><br>
+    </div>
+    <div class="label-align">
+        <label for="transfer-amount">$</label><input type="number" id="transfer-amount" name="transfer-amount" autofocus required>
+    </div>
+    <div class="radio">
+        <input type="radio" id="transfer-1-2" name="transfer-direction" value="primary" required>
+        <label for="transfer-1-2">Account 1 to 2</label>
+    </div>
+    <div class="radio">
+        <input type="radio" id="transfer-2-1" name="transfer-direction" value="reverse" required>
+        <label for="transfer-2-1">Account 2 to 1</label>
+    </div>
+    <input type="submit" value="Submit">
+</form>
+{% endblock content %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/update_event.js') }}"></script>
+{% endblock %}
