@@ -71,10 +71,8 @@ class AccountManager:
             return name_match or id_match
         
         if query.lower() in ('all', ''):
-            # return sorted(self.card_numbers.values(), key=lambda x: x.name)
             return self.card_numbers
         return { u:a for u, a in self.card_numbers.items() if match_in_query(a)}
-        # return sorted(tuple(filter(match_in_query, self.card_numbers.values())), key=lambda x: x.name)
     
     def transfer(self, payer, payee, amount: int):
         paying_account = self.card_numbers[payer]

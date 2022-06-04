@@ -1,0 +1,14 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Change Cash - Enter ID{% endblock %}
+{% block content %}
+<h2>Change Cash - Enter ID</h2>
+    <form action="" method="post" id="id-card-form" class="account-card">
+        <h3>Swipe Card or Enter Exact ID</h3>
+        <div class="label-align">
+            <label for="id-card">ID</label><input type="input" id="id-card" name="id-card" autofocus required>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+{% endblock content %}
+{% block scripts %}
+{% endblock %}

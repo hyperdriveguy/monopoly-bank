@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, Response, stream_with_context
+from flask import Flask, render_template, request, Response, stream_with_context, redirect
 from markupsafe import escape
 import random
 
@@ -37,7 +37,8 @@ def urlify(id, reverse=False):
         ('<', '&lt'),
         ('>', '&gt'),
         ('\'', '&sinquot'),
-        ('"', '&quot')
+        ('"', '&quot'),
+        ('%', '&percent')
     )
     for normal_char, url_char in replace_chars:
         if reverse:
@@ -84,6 +85,7 @@ def accounts_main_page():
 def individual_account_page(id):
     managed_accs.sync()
     id = urlify(id, reverse=True)
+    print(id)
     target_account = managed_accs.query(id)
     info = ''
     if 'withdraw-amount' in request.form:
@@ -95,8 +97,13 @@ def individual_account_page(id):
     
     return render_template('individual_account.html.jinja', urls=URLS, acc=target_account, info=info)
 
+@app.route(f'/{URLS["Change Cash"]}', methods=['GET', 'POST'])
+def change_cash():
+    if 'id-card' in request.form:
+        return redirect(f'/{URLS["Accounts"]}/{urlify(request.form["id-card"])}')
+    return render_template('change_cash.html.jinja', urls=URLS)
+
 @app.route(f'/{URLS["Transfer"]}')
-@app.route(f'/{URLS["Change Cash"]}')
 @app.route(f'/{URLS["Properties"]}')
 @app.route(f'/{URLS["Investments"]}')
 @app.route(f'/{URLS["Auctions"]}')
