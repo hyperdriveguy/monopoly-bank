@@ -1,25 +1,41 @@
 {% extends "sidebar.html.jinja" %}
 {% block title %}Accounts{% endblock %}
 {% block content %}
-<h2>Accounts{% if not query %} - {{ num_results }}{% endif %}</h2>
+<h2>Accounts - {{ num_accs }}</h2>
 <form action="" method="post">
     <input type="search" id="account-lookup-query" name="account-lookup-query" placeholder="Search for account..." required>
     <input type="submit" value="Search">
 </form>
 <button id="new-account">New Account</button>
 <button id="del-account">Delete Account</button>
-{% if query %}
-<p>{{ num_results }} result{% if num_results != 1 %}s{% endif %} for search "{{ query }}".</p>
-{% endif%}
+<button id="refresh">Refresh Accounts</button>
+<p>{{ info }}</p>
 <section class="account-list">
+    <form action="" method="post" id="make-new-acc" class="account-card hidden">
+        <h3><input type="text" id="new-acc-name" name="new-acc-name" placeholder="Name for new account" required></h3>
+        <div class="label-align">
+            <label for="new-acc-id">ID:</label><input type="text" id="new-acc-id" name="new-acc-id" placeholder="ID for new account" required><br>
+        </div>
+        <div class="label-align">
+            <label for="new-acc-cash">$</label><input type="number" id="new-acc-cash" name="new-acc-cash" value="0" required>
+        </div>
+        <input type="submit" value="Create">
+    </form>
     {% for acc in lookup %}
-    <a href="{{ acc.id }}" class="account-card">
+    <div class="acc-wrapper">
+    <button id="del-acc-{{ acc.id }}" class="indv-acc-del hidden" account="{{ acc.id }}">Delete</button>
+    <a href="{{ make_url(acc.id) }}" class="account-card clickable">
         <article>
             <h3>{{ acc.name }}</h3>
             <p>ID: {{ acc.id }}</p>
             <p>${{ acc.cash }}</p>
         </article>
     </a>
+    </div>
     {% endfor %}
 </section>
 {% endblock content %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/accounts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/update_event.js') }}"></script>
+{% endblock %}
