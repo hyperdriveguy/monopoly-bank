@@ -65,14 +65,32 @@ img {
     width: 75%;
 }
 
+.acc-wrapper {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.acc-wrapper > button {
+    width: 100%;
+}
+
 .account-card {
-    border: solid 2px black;
-    border-radius: 5px;
     /* padding: 1em; */
     min-width: min-content;
     text-decoration: none;
     color: #111;
     text-align: left;
+    pointer-events: none;
+}
+
+.account-card article, form.account-card {
+
+    border: solid 2px black;
+    border-radius: 5px;
+}
+
+.clickable {
+    pointer-events: initial;
 }
 
 .account-card h3 {
@@ -83,18 +101,57 @@ img {
     margin: 0;
 }
 
-.account-card:hover h3 {
-    background-color: #818181;
-    color: #111;
-}
-
 .account-card p {
     margin: 0.5em 1em;
 }
 
-.account-card:hover {
+a.account-card.clickable:hover article {
     background-color: #111;
     color: #818181;
+}
+
+a.account-card.clickable:hover h3 {
+    background-color: #818181;
+    color: #111;
+}
+
+form.account-card {
+    pointer-events: initial;
+}
+
+form.account-card input {
+    width: 95%;
+}
+
+input {
+    margin: 0.5em;
+}
+
+h3 input {
+    margin: 0;
+}
+
+.label-align {
+    display: flex;
+    margin: 0 1em;
+}
+
+.hidden {
+    display: none;
+}
+
+.label-align label {
+    margin-top: 0.75em;
+}
+
+.label-align input {
+    width: 100%;
+    margin: 0.5em 1em;
+}
+
+#account-forms {
+    margin: 1em auto;
+    max-width: 760px;
 }
 
 @media screen and (min-width: 1484px) {
