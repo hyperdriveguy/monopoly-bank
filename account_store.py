@@ -75,15 +75,27 @@ class AccountManager:
         return { u:a for u, a in self.card_numbers.items() if match_in_query(a)}
     
     def transfer(self, payer, payee, amount: int):
-        paying_account = self.card_numbers[payer]
+        paying_account = self.query(payer)
+        if paying_account == 'Account does not exist.':
+            return f'Account for payer ID {payer} does not exist.'
         if paying_account.cash < amount:
             return f'{paying_account.name} does not have enough funds to complete the transaction.'
+        payee_account = self.query(payee)
+        if payee_account == 'Account does not exist.':
+            return f'Account for payer ID {payee_account} does not exist.'
         paying_account.withdraw(amount)
-        payee_account = self.card_numbers[payee]
         payee_account.deposit(amount)
         self.sync_event.set()
-        return f'{self.card_numbers[payer].name} paid {self.card_numbers[payee].name} ${amount}.'
+        return f'{paying_account.name} (${paying_account.cash}) paid {payee_account.name} (${payee_account.cash}) ${amount}.'
     
     def sync(self):
-        print('Event sync set:', self.sync_event.is_set())
         self.sync_event.clear()
+    
+    def make_random_accs(self):
+        """
+        Make a large amount of random accounts for testing purposes.
+        """
+        self.new('id_num', 'card_holder')
+        self.new('asdf', 'Carson')
+        for i in range(1000):
+            self.new(str(random.randint(0,1000000000000000000000000000)), f'{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}', random.randint(0, 1000))
