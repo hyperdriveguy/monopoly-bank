@@ -4,5 +4,5 @@ function make_margin() {
     document.querySelector('main').style.margin = `0 0 0 ${target_margin + 10}px`;
 }
 
-window.addEventListener("load", make_margin)
-window.addEventListener("resize", make_margin)
+window.addEventListener("load", make_margin);
+window.addEventListener("resize", make_margin);
