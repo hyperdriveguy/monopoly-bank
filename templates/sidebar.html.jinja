@@ -11,18 +11,16 @@
         {% endblock %}
     </head>
     <body>
-        <script src="{{ url_for('static', filename='js/set-margin.js') }}"></script>
-        {% block scripts %}{% endblock %}
             <div class="side-bar">
                 <nav>
                     <a href="/"><img src="{{ url_for('static', filename='icons/home-2-line.svg') }}">Home</a>
                     <a href="/{{ urls['Accounts'] }}"><img src="{{ url_for('static', filename='icons/bank-line.svg') }}">{{ urls['Accounts'].title().replace('-', ' ') }}</a>
                     <a href="/{{ urls['Transfer'] }}"><img src="{{ url_for('static', filename='icons/exchange-line.svg') }}">{{ urls['Transfer'].title().replace('-', ' ') }}</a>
                     <a href="/{{ urls['Change Cash'] }}"><img src="{{ url_for('static', filename='icons/wallet-3-line.svg') }}">{{ urls['Change Cash'].title().replace('-', ' ') }}</a>
-                    <a href="/{{ urls['Properties'] }}"><img src="{{ url_for('static', filename='icons/community-line.svg') }}">{{ urls['Properties'].title().replace('-', ' ') }}</a>
-                    <a href="/{{ urls['Investments'] }}"><img src="{{ url_for('static', filename='icons/funds-line.svg') }}">{{ urls['Investments'].title().replace('-', ' ') }}</a>
-                    <a href="/{{ urls['Auctions'] }}"><img src="{{ url_for('static', filename='icons/shopping-cart-fill.svg') }}">{{ urls['Auctions'].title().replace('-', ' ') }}</a>
-                    <a href="/{{ urls['Help'] }}"><img src="{{ url_for('static', filename='icons/question-line.svg') }}">{{ urls['Help'].title().replace('-', ' ') }}</a>
+                    <a href="/{{ urls['Properties'] }}" class="hidden"><img src="{{ url_for('static', filename='icons/community-line.svg') }}">{{ urls['Properties'].title().replace('-', ' ') }}</a>
+                    <a href="/{{ urls['Investments'] }}" class="hidden"><img src="{{ url_for('static', filename='icons/funds-line.svg') }}">{{ urls['Investments'].title().replace('-', ' ') }}</a>
+                    <a href="/{{ urls['Auctions'] }}" class="hidden"><img src="{{ url_for('static', filename='icons/shopping-cart-fill.svg') }}">{{ urls['Auctions'].title().replace('-', ' ') }}</a>
+                    <a href="/{{ urls['Help'] }}" class="hidden"><img src="{{ url_for('static', filename='icons/question-line.svg') }}">{{ urls['Help'].title().replace('-', ' ') }}</a>
                 </nav>
             </div>
             <main>
@@ -36,5 +34,7 @@
         {% block footer %}
         {% endblock %}
         </footer>
+        <script src="{{ url_for('static', filename='js/set-margin.js') }}"></script>
+        {% block scripts %}{% endblock %}
     </body>
 </html>
