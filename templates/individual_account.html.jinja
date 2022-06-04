@@ -1,0 +1,33 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Account - {{ acc.name }}{% endblock %}
+{% block content %}
+<h2>Account - {{ acc.name }}</h2>
+<p id="info">{{ info }}</p>
+<p>ID: {{ acc.id}}</p>
+<p><strong>${{ acc.cash}}</strong></p>
+<div id="account-actions">
+    <button id="withdraw">Do Withdraw</button>
+    <button id="deposit">Do Deposit</button>
+    <button id="transfer" onclick="window.location.href='/transfer';">Do Transfer</button>
+</div>
+<div id="account-forms">
+    <form action="" method="post" id="withdraw-form" class="account-card hidden">
+        <h3>Withdraw</h3>
+        <div class="label-align">
+            <label for="withdraw-amount">$</label><input type="number" id="withdraw-amount" name="withdraw-amount" value="0" required>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+    <form action="" method="post" id="deposit-form" class="account-card hidden">
+        <h3>Deposit</h3>
+        <div class="label-align">
+            <label for="deposit-amount">$</label><input type="number" id="deposit-amount" name="deposit-amount" value="0" required>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+</div>
+{% endblock content %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/individual_account.js') }}"></script>
+<script src="{{ url_for('static', filename='js/update_event.js') }}"></script>
+{% endblock %}
