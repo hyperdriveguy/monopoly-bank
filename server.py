@@ -16,6 +16,8 @@ URLS = {
 
 app = Flask(__name__)
 
+managed_accs = AccountManager()
+
 def urlify(id, reverse=False):
     replace_chars = (
         ('?', '&question'),
@@ -67,7 +69,7 @@ def home_page():
 
 @app.route(f'/{URLS["Accounts"]}/', methods=['GET', 'POST'])
 def accounts_main_page():
-    managed_accs.sync()
+    managed_accs.recieved_update()
     # Show all accounts by default
     lookup = sorted(managed_accs.card_numbers.values(), key=lambda a: a.name)
     query = ''
@@ -99,12 +101,12 @@ def accounts_main_page():
 
 @app.route(f'/{URLS["Accounts"]}/<id>', methods=['GET', 'POST'])
 def individual_account_page(id):
-    managed_accs.sync()
+    managed_accs.recieved_update()
     id = urlify(id, reverse=True)
-    print(id)
     target_account = managed_accs.query(id)
     if target_account == 'Account does not exist.':
         return render_template('no_existing_account.html.jinja', urls=URLS, id=id)
+    target_account.get_transactions()
     # Check for money transferring
     info = post_transfer(request.form)
     if 'withdraw-amount' in request.form:
@@ -134,20 +136,32 @@ def transfer():
 def placeholder_page():
     return render_template('sidebar.html.jinja', urls=URLS)
 
+@app.route('/nuke')
+def nuke():
+    return managed_accs.nuke_accounts()
+
+@app.route('/random')
+def random_accs():
+    managed_accs.make_random_accs()
+    return 'AAAAAAAHAHHAHHAHAHHH'
+
 @app.route('/bruh')
 def bruh():
     @stream_with_context
-    def poll_updates():
+    def signal_updates():
         while True:
-            managed_accs.sync_event.wait()
+            managed_accs.server_update_signal.wait()
             yield 'data: {"sync": true}\n\n'
-            managed_accs.sync()
-    return Response(poll_updates(), mimetype='text/event-stream')
+            managed_accs.recieved_update()
+    return Response(signal_updates(), mimetype='text/event-stream')
 
-
-if __name__ == 'wsgi':
-    managed_accs = AccountManager()
-    print('Server is ready!')
 
 if __name__ == '__main__':
-    print('Do not run this file directly with the Python interpreter. Use "flask run" instead.')
+    try:
+        app.run()
+    finally:
+        for m in managed_accs.cleanup():
+            print(m)
+
+if __name__ == 'wsgi':
+    print('Avoid running with flask run as it doesn\'t allow the db to close.')
