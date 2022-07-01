@@ -23,11 +23,11 @@
     </form>
     {% for acc in lookup %}
     <div class="acc-wrapper">
-    <button id="del-acc-{{ acc.id }}" class="indv-acc-del hidden" account="{{ acc.id }}">Delete</button>
-    <a href="{{ make_url(acc.id) }}" class="account-card clickable">
+    <button id="del-acc-{{ acc.ident }}" class="indv-acc-del hidden" account="{{ acc.ident }}">Delete</button>
+    <a href="{{ make_url(acc.ident) }}" class="account-card clickable">
         <article>
             <h3>{{ acc.name }}</h3>
-            <p>ID: {{ acc.id }}</p>
+            <p>ID: {{ acc.ident }}</p>
             <p>${{ acc.cash }}</p>
         </article>
     </a>

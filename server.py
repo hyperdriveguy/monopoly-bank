@@ -1,6 +1,11 @@
-from flask import Flask, render_template, request, Response, stream_with_context, redirect
-from markupsafe import escape
 import random
+import secrets
+from urllib.parse import urljoin, urlparse
+
+from flask import (Flask, Response, redirect, render_template, request,
+                   stream_with_context)
+from flask_login import LoginManager, login_required, login_user
+from markupsafe import escape
 
 from account_store import AccountManager
 
@@ -16,38 +21,61 @@ URLS = {
 
 app = Flask(__name__)
 
+# Invalidate sessions when server restarts
+# This avoids permanent key storage
+app.secret_key = secrets.token_hex()
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
 managed_accs = AccountManager()
 
-def urlify(id, reverse=False):
+@login_manager.user_loader
+def load_user(ident):
+    user = managed_accs.query(ident)
+    if user == 'Account does not exist.':
+        return None
+    return user
+
+def urlify(ident, reverse=False):
     replace_chars = (
-        ('?', '&question'),
-        ('/', '&slash'),
-        ('\\', '&backslash'),
-        ('@', '&at'),
-        ('^', '&caret'),
-        ('*', '&glob'),
-        ('#', '&hash'),
-        ('(', '&pareno'),
-        (')', '&parenc'),
-        ('|', '&pipe'),
-        ('`', '&backtick'),
-        ('~', '&tilde'),
-        ('[', '&bracko'),
-        (']', '&brackc'),
-        ('{', '&braceo'),
-        ('}', '&bracec'),
-        ('<', '&lt'),
-        ('>', '&gt'),
-        ('\'', '&sinquot'),
-        ('"', '&quot'),
-        ('%', '&percent')
+        ('?', '&a'),
+        ('/', '&b'),
+        ('\\', '&c'),
+        ('@', '&d'),
+        ('^', '&e'),
+        ('*', '&f'),
+        ('#', '&g'),
+        ('(', '&h'),
+        (')', '&i'),
+        ('|', '&j'),
+        ('`', '&k'),
+        ('~', '&l'),
+        ('[', '&m'),
+        (']', '&n'),
+        ('{', '&o'),
+        ('}', '&p'),
+        ('<', '&q'),
+        ('>', '&r'),
+        ('\'', '&s'),
+        ('"', '&t'),
+        ('%', '&u'),
+        ('&', '&v')
     )
     for normal_char, url_char in replace_chars:
         if reverse:
-            id = id.replace(url_char, normal_char)
+            ident = ident.replace(url_char, normal_char)
         else:
-            id = id.replace(normal_char, url_char)
-    return id
+            ident = ident.replace(normal_char, url_char)
+    return ident
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
+
 
 def post_transfer(args):
     info = ''
@@ -68,6 +96,7 @@ def home_page():
     return render_template('home.html.jinja', urls=URLS)
 
 @app.route(f'/{URLS["Accounts"]}/', methods=['GET', 'POST'])
+@login_required
 def accounts_main_page():
     managed_accs.recieved_update()
     # Show all accounts by default
@@ -96,7 +125,7 @@ def accounts_main_page():
         query = request.form['account-lookup-query']
         lookup = sorted(managed_accs.search(query).values(), key=lambda a: a.name)
         info = f'{len(lookup)} result{"s" if len(lookup) > 1 else ""} for search "{query}".'
-    
+
     return render_template('accounts.html.jinja', urls=URLS, make_url=urlify, num_accs=len(managed_accs.card_numbers), lookup=lookup, info=info)
 
 @app.route(f'/{URLS["Accounts"]}/<id>', methods=['GET', 'POST'])
@@ -115,7 +144,7 @@ def individual_account_page(id):
     elif 'deposit-amount' in request.form:
         amount = target_account.deposit(int(request.form['deposit-amount']))
         info = f'Deposited ${amount} into account.'
-    
+
     return render_template('individual_account.html.jinja', urls=URLS, acc=target_account, info=info)
 
 @app.route(f'/{URLS["Change Cash"]}', methods=['GET', 'POST'])
