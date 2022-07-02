@@ -41,29 +41,27 @@ class TransactionLog:
                 properties TEXT)
             """
         )
-        try:
-            while True:
+        while True:
+            try:
                 next_command = self.exec_queue.get()
-                if next_command == SIG_STOP:
-                    break
-                update, com, args = next_command
-                if update:
-                    if args is not None:
-                        db.execute(com, args)
-                    else:
-                        db.execute(com)
-                    db.commit()
+            except KeyboardInterrupt:
+                pass
+            if next_command == SIG_STOP:
+                break
+            update, com, args = next_command
+            if update:
+                if args is not None:
+                    db.execute(com, args)
                 else:
-                    if args is not None:
-                        self.receive_data.put(db.execute(com, args).fetchall())
-                    else:
-                        self.receive_data.put(db.execute(com).fetchall())
-        except KeyboardInterrupt:
-            # print('Killing db listen process')
-            pass
-        finally:
-            db.commit()
-            db.close()
+                    db.execute(com)
+                db.commit()
+            else:
+                if args is not None:
+                    self.receive_data.put(db.execute(com, args).fetchall())
+                else:
+                    self.receive_data.put(db.execute(com).fetchall())
+        db.commit()
+        db.close()
 
 
     def _send_transaction_to_listener(self, trans_type, account, info):
