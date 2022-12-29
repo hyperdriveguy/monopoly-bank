@@ -16,6 +16,7 @@ def hash_new_password(password: str):
     pw_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
     return salt, pw_hash
 
+
 def verify_password(salt: bytes, pw_hash: bytes, password: str):
     """
     Given a previously-stored salt and hash, and a password provided by a user
@@ -25,19 +26,6 @@ def verify_password(salt: bytes, pw_hash: bytes, password: str):
         pw_hash,
         hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
     )
-
-class Mutex:
-
-    def __init__(self):
-        self._event = Event()
-        self._event.set()
-
-    def acquire(self):
-        self._event.wait()
-        self._event.clear()
-
-    def release(self):
-        self._event.set()
 
 
 class Account:
@@ -52,7 +40,7 @@ class Account:
         self.properties = properties
         self.account_update_trigger = update_event
         # Prevent race conditions by using a mutex on sections that write or change data.
-        self.write_lock = Mutex()
+        self.write_lock = Lock()
         self.tlog_connection = log_connection
 
     def __str__(self):
@@ -67,6 +55,7 @@ class Account:
     def is_anonymous(self):
         return False
 
+    # Note: this isn't the internal ID, but the one the user uses
     def get_id(self):
         return self.ident
 
@@ -106,8 +95,8 @@ class AccountManager:
     def __init__(self):
         self.card_numbers = dict()
         self.server_update_signal = Event()
-        # Prevent race conditions by "locking" sections that write or change data.
-        self.write_lock = Mutex()
+        # Prevent race conditions by locking sections that write or change data.
+        self.write_lock = Lock()
         self.tlog_connection = TransactionLog('tlog.db')
         self.tlog_connection.log_server_started()
         self.load_saved()
@@ -158,6 +147,12 @@ class AccountManager:
 
     def exists(self, id_num):
         return id_num in self.card_numbers
+    
+    def username_exists(self, username):
+        for acc in self.card_numbers.values():
+            if acc.username == username:
+                return acc
+        return None
 
     @property
     def num_accounts(self):
