@@ -18,6 +18,45 @@ URLS = {
     'Help': 'help'
 }
 
+def urlify(ident, reverse=False):
+    replace_chars = (
+        ('?', '&a'),
+        ('/', '&b'),
+        ('\\', '&c'),
+        ('@', '&d'),
+        ('^', '&e'),
+        ('*', '&f'),
+        ('#', '&g'),
+        ('(', '&h'),
+        (')', '&i'),
+        ('|', '&j'),
+        ('`', '&k'),
+        ('~', '&l'),
+        ('[', '&m'),
+        (']', '&n'),
+        ('{', '&o'),
+        ('}', '&p'),
+        ('<', '&q'),
+        ('>', '&r'),
+        ('\'', '&s'),
+        ('"', '&t'),
+        ('%', '&u'),
+        ('&', '&v')
+    )
+    for normal_char, url_char in replace_chars:
+        if reverse:
+            ident = ident.replace(url_char, normal_char)
+        else:
+            ident = ident.replace(normal_char, url_char)
+    return ident
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+        ref_url.netloc == test_url.netloc
+
 if __name__ == '__main__':
     app = Flask(__name__)
 
@@ -36,45 +75,6 @@ if __name__ == '__main__':
         if user == 'Account does not exist.':
             return None
         return user
-
-    def urlify(ident, reverse=False):
-        replace_chars = (
-            ('?', '&a'),
-            ('/', '&b'),
-            ('\\', '&c'),
-            ('@', '&d'),
-            ('^', '&e'),
-            ('*', '&f'),
-            ('#', '&g'),
-            ('(', '&h'),
-            (')', '&i'),
-            ('|', '&j'),
-            ('`', '&k'),
-            ('~', '&l'),
-            ('[', '&m'),
-            (']', '&n'),
-            ('{', '&o'),
-            ('}', '&p'),
-            ('<', '&q'),
-            ('>', '&r'),
-            ('\'', '&s'),
-            ('"', '&t'),
-            ('%', '&u'),
-            ('&', '&v')
-        )
-        for normal_char, url_char in replace_chars:
-            if reverse:
-                ident = ident.replace(url_char, normal_char)
-            else:
-                ident = ident.replace(normal_char, url_char)
-        return ident
-
-
-    def is_safe_url(target):
-        ref_url = urlparse(request.host_url)
-        test_url = urlparse(urljoin(request.host_url, target))
-        return test_url.scheme in ('http', 'https') and \
-            ref_url.netloc == test_url.netloc
 
 
     def post_transfer(args):
@@ -96,31 +96,34 @@ if __name__ == '__main__':
         return render_template('home.html.jinja', urls=URLS)
 
 
-    # @app.route('/login', methods=['GET', 'POST'])
-    # def login():
-    #     # Here we use a class of some kind to represent and validate our
-    #     # client-side form data. For example, WTForms is a library that will
-    #     # handle this for us, and we use a custom LoginForm to validate.
-    #     # form = LoginForm()
-    #     if form.validate_on_submit():
-    #         # Login and validate the user.
-    #         # user should be an instance of your `User` class
-    #         login_user(user)
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        # Here we use a class of some kind to represent and validate our
+        # client-side form data. For example, WTForms is a library that will
+        # handle this for us, and we use a custom LoginForm to validate.
+        # form = LoginForm()
+        failed_login = False
+        if 'username' in request.form:
+            user = managed_accs.username_exists(request.form['username'])
+            if user is not None and user.is_authenticated(request.form['password']):
+                # Login and validate the user.
+                # user should be an instance of your `User` class
+                login_user(user)
 
-    #         flash('Logged in successfully.')
+                flash('Logged in successfully.')
 
-    #         next = request.args.get('next')
-    #         # is_safe_url should check if the url is safe for redirects.
-    #         # See http://flask.pocoo.org/snippets/62/ for an example.
-    #         if not is_safe_url(next):
-    #             return abort(400)
+                next = request.args.get('next')
+                # is_safe_url should check if the url is safe for redirects.
+                # See http://flask.pocoo.org/snippets/62/ for an example.
+                if not is_safe_url(next):
+                    return abort(400)
 
-    #         return redirect(next or url_for('index'))
-    #     return render_template('login.html', form=form)
+                return redirect(next or url_for('index'))
+        return render_template('login.html.jinja', urls=URLS)
 
 
     @app.route(f'/{URLS["Accounts"]}/', methods=['GET', 'POST'])
-    @login_required
+    #@login_required
     def accounts_main_page():
         managed_accs.recieved_update()
         # Show all accounts by default
@@ -160,9 +163,11 @@ if __name__ == '__main__':
         if target_account == 'Account does not exist.':
             return render_template('no_existing_account.html.jinja', urls=URLS, id=id)
         target_account.get_transactions()
+        info = ''
         # Check for money transferring
-        info = post_transfer(request.form)
-        if 'withdraw-amount' in request.form:
+        if 'transfer-amount' in request.form:
+            info = post_transfer(request.form)
+        elif 'withdraw-amount' in request.form:
             amount = target_account.withdraw(int(request.form['withdraw-amount']))
             info = f'Withdrew ${amount} from account.'
         elif 'deposit-amount' in request.form:
