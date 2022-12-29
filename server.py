@@ -141,7 +141,6 @@ if __name__ == '__main__':
         # Show all accounts by default
         lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
         query = ''
-        info = ''
         # Check if new account was created
         if 'new-acc-name' in request.form:
             new_id, new_name, new_cash = (
@@ -149,23 +148,23 @@ if __name__ == '__main__':
                 request.form['new-acc-name'].title(),
                 int(request.form['new-acc-cash'])
             )
-            info = managed_accs.new(new_id, new_name, 'temp', new_cash)
+            flash(managed_accs.new(new_id, new_name, 'temp', new_cash))
             if 'account-redirect' in request.form:
                 return redirect(f'/{URLS["Accounts"]}/{urlify(request.form["account-redirect"])}')
             lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
         # Check if account was deleted
         elif 'del-acc-id' in request.form:
             managed_accs.delete(request.form['del-acc-id'])
-            info = f'Deleted account for ID {request.form["del-acc-id"]}.'
+            flash(f'Deleted account for ID {request.form["del-acc-id"]}.')
             # This is required so the deleted account doesn't show on the page
             lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
         # Do account query as applicable
         elif 'account-lookup-query' in request.form:
             query = request.form['account-lookup-query']
             lookup = sorted(managed_accs.search(query).values(), key=lambda a: a.name)
-            info = f'{len(lookup)} result{"s" if len(lookup) > 1 else ""} for search "{query}".'
+            flash(f'{len(lookup)} result{"s" if len(lookup) > 1 else ""} for search "{query}".')
 
-        return render_template('accounts.html.jinja', urls=URLS, make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup, info=info)
+        return render_template('accounts.html.jinja', urls=URLS, make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup)
 
     @app.route(f'/{URLS["Accounts"]}/<id>', methods=['GET', 'POST'])
     @login_required
@@ -176,18 +175,17 @@ if __name__ == '__main__':
         if target_account == 'Account does not exist.':
             return render_template('no_existing_account.html.jinja', urls=URLS, id=id)
         target_account.get_transactions()
-        info = ''
         # Check for money transferring
         if 'transfer-amount' in request.form:
-            info = post_transfer(request.form)
+            flash(post_transfer(request.form))
         elif 'withdraw-amount' in request.form:
             amount = target_account.withdraw(int(request.form['withdraw-amount']))
-            info = f'Withdrew ${amount} from account.'
+            flash(f'Withdrew ${amount} from account.')
         elif 'deposit-amount' in request.form:
             amount = target_account.deposit(int(request.form['deposit-amount']))
-            info = f'Deposited ${amount} into account.'
+            flash(f'Deposited ${amount} into account.')
 
-        return render_template('individual_account.html.jinja', urls=URLS, acc=target_account, info=info)
+        return render_template('individual_account.html.jinja', urls=URLS, acc=target_account)
 
     @app.route(f'/{URLS["Change Cash"]}', methods=['GET', 'POST'])
     @login_required
@@ -199,8 +197,8 @@ if __name__ == '__main__':
     @app.route(f'/{URLS["Transfer"]}', methods=['GET', 'POST'])
     @login_required
     def transfer():
-        info = post_transfer(request.form)
-        return render_template('transfer.html.jinja', urls=URLS, info=info)
+        flash(post_transfer(request.form))
+        return render_template('transfer.html.jinja', urls=URLS)
 
     @app.route(f'/{URLS["Properties"]}')
     @app.route(f'/{URLS["Investments"]}')
@@ -220,6 +218,7 @@ if __name__ == '__main__':
         def signal_updates():
             while True:
                 managed_accs.server_update_signal.wait()
+                print("Sending update...")
                 yield 'data: {"sync": true}\n\n'
                 managed_accs.recieved_update()
         return Response(signal_updates(), mimetype='text/event-stream')
