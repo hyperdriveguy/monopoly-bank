@@ -110,7 +110,6 @@ class AccountManager:
         self.write_lock.release()
         self.server_update_signal.set()
         self.tlog_connection.log_accounts_reloaded()
-        print(self.accounts_storage)
         return f'Loaded {len(self.accounts_storage)} account{"s" if len(self.accounts_storage) != 1 else ""} from database'
 
     def nuke_accounts(self):

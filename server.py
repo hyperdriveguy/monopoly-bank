@@ -69,8 +69,6 @@ if __name__ == '__main__':
     login_manager.init_app(app)
     login_manager.login_view = 'login'
 
-    websock = Sock(app)
-
     managed_accs = AccountManager()
 
     @login_manager.user_loader
