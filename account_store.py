@@ -69,6 +69,7 @@ class Account:
         self.write_lock.release()
         self.tlog_connection.update_account(self.ident, self.cash)
         self.account_update_trigger.set()
+        print(f'Event trigger from account {self.ident} withdraw')
         if log:
             self.tlog_connection.log_account_withdraw(self.ident, amount)
         return amount
@@ -80,6 +81,7 @@ class Account:
             self.write_lock.release()
             self.tlog_connection.update_account(self.ident, self.cash)
             self.account_update_trigger.set()
+            print(f'Event trigger from account {self.ident} deposit')
             if log:
                 self.tlog_connection.log_account_deposit(self.ident, amount)
         else:
@@ -100,6 +102,8 @@ class AccountManager:
         self.tlog_connection = TransactionLog('tlog.db')
         self.tlog_connection.log_server_started()
         self.load_saved()
+        # Ensure update signal starts cleared
+        self.recieved_update()
 
     def load_saved(self):
         account_tuples = self.tlog_connection.get_all_accounts()
@@ -109,6 +113,7 @@ class AccountManager:
             self.accounts_storage[acc[0]] = Account(*acc, self.server_update_signal, self.tlog_connection)
         self.write_lock.release()
         self.server_update_signal.set()
+        print('Event trigger from load_saved')
         self.tlog_connection.log_accounts_reloaded()
         return f'Loaded {len(self.accounts_storage)} account{"s" if len(self.accounts_storage) != 1 else ""} from database'
 
@@ -133,6 +138,7 @@ class AccountManager:
         self.write_lock.release()
         self.tlog_connection.create_account(user_id, card_holder, pass_salt, pass_hash, starting_amount, is_banker)
         self.server_update_signal.set()
+        print('Event trigger from new account')
         self.tlog_connection.log_account_created(user_id, starting_amount)
         return f'Created new account for {card_holder}.'
 
@@ -142,6 +148,7 @@ class AccountManager:
         self.write_lock.release()
         self.tlog_connection.delete_account(user_id)
         self.server_update_signal.set()
+        print('Event trigger from delete account')
         self.tlog_connection.log_account_deleted(user_id)
 
     def exists(self, user_id):
@@ -187,6 +194,7 @@ class AccountManager:
         self.tlog_connection.update_account(payer, paying_account.cash)
         self.tlog_connection.update_account(payee, payee_account.cash)
         self.server_update_signal.set()
+        print('Event trigger from transfer')
         self.tlog_connection.log_account_transfer(payer, payee, info)
         return info
 
