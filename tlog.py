@@ -20,7 +20,6 @@ class TransactionLog:
 
     def _queue_listener(self):
         db = sqlite3.connect(self.filename)
-        # db.row_factory = sqlite3.Row
         # Create TLog table and Accounts table if they doesn't exist
         db.execute(
             """CREATE TABLE IF NOT EXISTS TLog(
