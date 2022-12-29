@@ -33,11 +33,11 @@ class TransactionLog:
             """CREATE TABLE IF NOT EXISTS Accounts(
                 id TEXT PRIMARY KEY,
                 name TEXT,
-                username TEXT,
                 salt BLOB,
                 password_hash BLOB,
                 cash INTEGER,
-                properties TEXT)
+                properties TEXT,
+                is_banker BOOL)
             """
         )
         while True:
@@ -127,11 +127,11 @@ class TransactionLog:
             None
         ))
 
-    def create_account(self, ident, name, cash):
+    def create_account(self, ident, name, pw_salt, pw_hash, cash, is_banker):
         self.exec_queue.put((
             True,
-            "INSERT INTO Accounts VALUES (?, ?, NULL, NULL, NULL, ?, NULL)",
-            (ident, name, cash)
+            "INSERT INTO Accounts VALUES (?, ?, ?, ?, ?, NULL, ?)",
+            (ident, name, pw_salt, pw_hash, cash, is_banker)
         ))
 
     def update_account(self, ident, cash):

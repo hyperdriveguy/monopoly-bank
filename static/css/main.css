@@ -41,6 +41,13 @@ nav a:hover {
     filter: brightness(180%);
 }
 
+.flashes {
+    background-color: aquamarine;
+    margin: 0;
+    padding: 0.5em;
+    border-radius: 0 0 14px 14px;
+}
+
 main {
     /* Left margin same as the width of the sidebar */
     /* This can't be set dynamically with pure CSS, so JS is used elsewhere */

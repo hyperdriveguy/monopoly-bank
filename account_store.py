@@ -30,14 +30,14 @@ def verify_password(salt: bytes, pw_hash: bytes, password: str):
 
 class Account:
 
-    def __init__(self, ident, name, username, pw_salt, pw_hash, starting_cash:int, properties, update_event, log_connection):
+    def __init__(self, ident, name, pw_salt, pw_hash, starting_cash:int, properties, banker, update_event, log_connection):
         self.ident = ident
         self.name = name.capitalize()
-        self.username = username
         self.pw_salt = pw_salt
         self.pw_hash = pw_hash
         self.cash = starting_cash
         self.properties = properties
+        self.banker = banker
         self.account_update_trigger = update_event
         # Prevent race conditions by using a mutex on sections that write or change data.
         self.write_lock = Lock()
@@ -50,7 +50,7 @@ class Account:
         return verify_password(self.pw_salt, self.pw_hash, try_pw)
 
     def is_active(self):
-        return self.username != ''
+        return self.cash > 0
 
     def is_anonymous(self):
         return False
@@ -93,7 +93,7 @@ class Account:
 class AccountManager:
 
     def __init__(self):
-        self.card_numbers = dict()
+        self.accounts_storage = dict()
         self.server_update_signal = Event()
         # Prevent race conditions by locking sections that write or change data.
         self.write_lock = Lock()
@@ -104,63 +104,57 @@ class AccountManager:
     def load_saved(self):
         account_tuples = self.tlog_connection.get_all_accounts()
         self.write_lock.acquire()
-        self.card_numbers = dict()
+        self.accounts_storage = dict()
         for acc in account_tuples:
-            try:
-                self.card_numbers[acc[0]] = Account(*acc, self.server_update_signal, self.tlog_connection)
-            except TypeError as ex:
-                print(ex)
-                print(acc)
-                continue
+            self.accounts_storage[acc[0]] = Account(*acc, self.server_update_signal, self.tlog_connection)
         self.write_lock.release()
         self.server_update_signal.set()
         self.tlog_connection.log_accounts_reloaded()
-        return f'Loaded {len(self.card_numbers)} account{"s" if len(self.card_numbers) != 1 else ""} from database'
+        print(self.accounts_storage)
+        return f'Loaded {len(self.accounts_storage)} account{"s" if len(self.accounts_storage) != 1 else ""} from database'
 
     def nuke_accounts(self):
-        self.card_numbers = dict()
+        self.accounts_storage = dict()
         self.tlog_connection.nuke_tables()
         return 'Deleted all account and transaction information.'
 
-    def new(self, id_num, card_holder, starting_amount:int=0):
+    def new(self, user_id, card_holder, password, starting_amount:int=1000):
         """
         Create a new account
+
+        If no accounts exist, the first player to make a new account is the banker.
         """
+        pass_salt, pass_hash = hash_new_password(password)
         self.write_lock.acquire()
-        if self.exists(id_num):
+        if self.exists(user_id):
             self.write_lock.release()
-            return f'ID "{id_num}" already associated with an account!'
-        self.card_numbers[id_num] = Account(id_num, card_holder, '', bytes(), bytes(), starting_amount, [], self.server_update_signal, self.tlog_connection)
+            return f'ID "{user_id}" already associated with an account!'
+        is_banker = len(self.accounts_storage) == 0
+        self.accounts_storage[user_id] = Account(user_id, card_holder, pass_salt, pass_hash, starting_amount, set(), is_banker,  self.server_update_signal, self.tlog_connection)
         self.write_lock.release()
-        self.tlog_connection.create_account(id_num, card_holder, starting_amount)
+        self.tlog_connection.create_account(user_id, card_holder, pass_salt, pass_hash, starting_amount, is_banker)
         self.server_update_signal.set()
-        self.tlog_connection.log_account_created(id_num, starting_amount)
+        self.tlog_connection.log_account_created(user_id, starting_amount)
         return f'Created new account for {card_holder}.'
 
-    def delete(self, id_num):
+    def delete(self, user_id):
         self.write_lock.acquire()
-        self.card_numbers.pop(id_num)
+        self.accounts_storage.pop(user_id)
         self.write_lock.release()
-        self.tlog_connection.delete_account(id_num)
+        self.tlog_connection.delete_account(user_id)
         self.server_update_signal.set()
-        self.tlog_connection.log_account_deleted(id_num)
+        self.tlog_connection.log_account_deleted(user_id)
 
-    def exists(self, id_num):
-        return id_num in self.card_numbers
-    
-    def username_exists(self, username):
-        for acc in self.card_numbers.values():
-            if acc.username == username:
-                return acc
-        return None
+    def exists(self, user_id):
+        return user_id in self.accounts_storage
 
     @property
     def num_accounts(self):
-        return len(self.card_numbers)
+        return len(self.accounts_storage)
 
-    def query(self, id_num):
-        if self.exists(id_num):
-            return self.card_numbers[id_num]
+    def query(self, user_id):
+        if self.exists(user_id):
+            return self.accounts_storage[user_id]
         return 'Account does not exist.'
 
     def search(self, query):
@@ -171,8 +165,8 @@ class AccountManager:
             return name_match or id_match
 
         if query.lower() in ('all', ''):
-            return self.card_numbers
-        return { u:a for u, a in self.card_numbers.items() if match_in_query(a)}
+            return self.accounts_storage
+        return { u:a for u, a in self.accounts_storage.items() if match_in_query(a)}
 
     def transfer(self, payer, payee, amount: int):
         self.write_lock.acquire()
@@ -203,14 +197,3 @@ class AccountManager:
     def cleanup(self):
         yield '\nStarting cleanup'
         yield from self.tlog_connection.stop_db()
-
-    def make_random_accs(self):
-        """
-        Make a large amount of random accounts for testing purposes.
-        """
-        self.new('id_num', 'card_holder')
-        self.new('asdf', 'Carson')
-        print('start randomness')
-        for i in range(10000):
-            print('Starting acc', i)
-            self.new(str(random.randint(0,1000000000000000000000000000)), f'{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}{chr((i + random.randint(0, 63)) % 62 + 64)}', random.randint(0, 1000))
