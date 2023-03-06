@@ -1,10 +1,5 @@
 // Forms or other elements that are sensitive to refreshes when unhidden.
 const update_sensitive = [document.querySelector('#make-new-acc'), document.querySelector('#transfer-form')];
-let initial_event_done = false;
-
-function isPostBack() {
-    return document.referrer.indexOf(document.location.href) > -1;
-}
 
 // Don't force refresh if accounts change.
 // If the intention is to create or modify an account,
@@ -24,20 +19,12 @@ function keepFormsAlive() {
     });
 }
 
+const update_event = new EventSource("/bruh");
+
 window.addEventListener('load', () => {
-    if (!isPostBack()) {
-        initial_event_done = true;
-    }
-    // Wait 100ms for potential event
-    setTimeout(() => {initial_event_done = true;}, 100);
-    const source = new EventSource("/bruh");
-    source.onmessage = function(req) {
+    update_event.onmessage = function(req) {
         res = JSON.parse(req.data)
         if (res['sync']) {
-            if (!initial_event_done) {
-                initial_event_done = true;
-                return;
-            }
             if (keepFormsAlive()) {
                 return;
             }
@@ -45,7 +32,13 @@ window.addEventListener('load', () => {
         }
         console.log(req.data);
     }; 
-    source.addEventListener('error', function(event) {
-        console.log("Failed to connect to event stream for auto update.");
+    update_event.addEventListener('error', function(event) {
+        console.error("Failed to connect to event stream for auto update.");
     }, false);
+});
+
+// The event must be unloaded from the page manually to prevent breakage.
+// https://bugzilla.mozilla.org/show_bug.cgi?id=833462
+window.addEventListener('beforeunload', () => {
+	update_event.close();
 });

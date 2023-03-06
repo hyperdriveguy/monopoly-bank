@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Account - {{ acc.name }}</h2>
 <p id="info">{{ info }}</p>
-<p>ID: {{ acc.id}}</p>
+<p>ID: {{ acc.ident}}</p>
 <p><strong>${{ acc.cash}}</strong></p>
 <div id="account-actions">
     <button id="withdraw">Do Withdraw</button>
@@ -27,7 +27,7 @@
     </form>
     <form action="" method="post" id="transfer-form" class="account-card hidden">
         <h3>Do Transfer</h3>
-        <input type="hidden" name="account-1-id" value="{{ acc.id }}">
+        <input type="hidden" name="account-1-id" value="{{ acc.ident }}">
         <div class="label-align">
             <label for="account-2-id">Target account ID:</label><input type="text" id="account-2-id" name="account-2-id" placeholder="Target ID" required><br>
         </div>

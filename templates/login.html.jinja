@@ -1,0 +1,16 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<form action="" method="post" id="user-login" class="account-card">
+    <h3>Login</h3>
+    <div class="label-align">
+        <label for="login-username">Username</label><input type="text" id="login-username" name="username" placeholder="Username" required><br>
+    </div>
+    <div class="label-align">
+        <label for="login-password">Password</label><input type="password" id="login-password" name="password" required>
+    </div>
+    <input type="submit" value="Login">
+</form>
+{% endblock content %}
+{% block scripts %}
+{% endblock %}
