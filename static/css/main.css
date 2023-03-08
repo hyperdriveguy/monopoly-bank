@@ -46,6 +46,7 @@ nav a:hover {
     margin: 0;
     padding: 0.5em;
     border-radius: 0 0 14px 14px;
+    list-style: none;
 }
 
 main {
