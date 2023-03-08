@@ -4,12 +4,26 @@
 <form action="" method="post" id="user-login" class="account-card">
     <h3>Login</h3>
     <div class="label-align">
-        <label for="login-username">Username</label><input type="text" id="login-username" name="username" placeholder="Username" required><br>
+        <label for="login-username">Username</label><input type="text" id="login-username" name="login-username" placeholder="Username" required><br>
     </div>
     <div class="label-align">
-        <label for="login-password">Password</label><input type="password" id="login-password" name="password" required>
+        <label for="login-password">Password</label><input type="password" id="login-password" name="login-password" required>
     </div>
     <input type="submit" value="Login">
+</form>
+<p>OR</p>
+<form action="" method="post" id="user-signup" class="account-card">
+    <h3>New Player Signup</h3>
+    <div class="label-align">
+        <label for="signup-username">New username</label><input type="text" id="signup-username" name="signup-username" placeholder="Username" required><br>
+    </div>
+    <div class="label-align">
+        <label for="signup-realname">Real Name</label><input type="text" id="signup-realname" name="signup-realname" placeholder="Joe Daniels" required><br>
+    </div>
+    <div class="label-align">
+        <label for="signup-password">New password</label><input type="password" id="signup-password" name="signup-password" required>
+    </div>
+    <input type="submit" value="Sign up">
 </form>
 {% endblock content %}
 {% block scripts %}

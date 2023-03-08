@@ -58,6 +58,17 @@ def is_safe_url(target):
     return test_url.scheme in ('http', 'https') and \
         ref_url.netloc == test_url.netloc
 
+
+def login_redirect(username, next_url):
+    login_user(username)
+    flash('Logged in successfully.')
+    # is_safe_url should check if the url is safe for redirects.
+    # See http://flask.pocoo.org/snippets/62/ for an example.
+    if not is_safe_url(next_url):
+        return abort(400)
+    return redirect(next_url or '/')
+
+
 if __name__ == '__main__':
     app = Flask(__name__)
 
@@ -95,34 +106,36 @@ if __name__ == '__main__':
 
     @app.route('/')
     def home_page():
-        flash(current_user)
+        if not current_user.is_anonymous:
+            flash(current_user)
         return render_template('home.html.jinja', urls=URLS)
 
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         failed_login = False
-        if 'username' in request.form:
-            user = managed_accs.query(request.form['username'])
-            print(f"{request.form['username']}: {request.form['password']}")
+        if 'login-username' in request.form:
+            user = managed_accs.query(request.form['login-username'])
+            print(f"{request.form['login-username']}: {request.form['login-password']}")
             if user == 'Account does not exist.':
                 flash(user)
-            elif user.is_authenticated(request.form['password']):
+            elif user.is_authenticated(request.form['login-password']):
                 # Login and validate the user.
                 # user should be an instance of your `User` class
-                login_user(user)
-
-                flash('Logged in successfully.')
-
-                next_url = request.args.get('next')
-                # is_safe_url should check if the url is safe for redirects.
-                # See http://flask.pocoo.org/snippets/62/ for an example.
-                if not is_safe_url(next_url):
-                    return abort(400)
-                return redirect(next_url or '/')
+                return login_redirect(user, request.args.get('next'))
 
             else:
                 flash('Incorrect password')
+
+        elif 'signup-username' in request.form:
+            new_username = request.form['signup-username']
+            new_realname = request.form['signup-realname']
+            new_password = request.form['signup-password']
+            if managed_accs.new(new_username, new_realname, new_password):
+                user = managed_accs.query(new_username)
+                return login_redirect(user, request.args.get('next'))
+            else:
+                flash('Username for account already exists.')
 
         return render_template('login.html.jinja', urls=URLS)
 
