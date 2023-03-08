@@ -52,6 +52,7 @@ class Account:
     def is_active(self):
         return self.cash > 0
 
+    @property
     def is_anonymous(self):
         return False
 
@@ -122,7 +123,7 @@ class AccountManager:
         self.tlog_connection.nuke_tables()
         return 'Deleted all account and transaction information.'
 
-    def new(self, user_id, card_holder, password, starting_amount:int=1000):
+    def new(self, user_id, card_holder, password, starting_amount:int=1000) -> bool:
         """
         Create a new account
 
@@ -132,7 +133,8 @@ class AccountManager:
         self.write_lock.acquire()
         if self.exists(user_id):
             self.write_lock.release()
-            return f'ID "{user_id}" already associated with an account!'
+            # f'ID "{user_id}" already associated with an account!'
+            return False
         is_banker = len(self.accounts_storage) == 0
         self.accounts_storage[user_id] = Account(user_id, card_holder, pass_salt, pass_hash, starting_amount, set(), is_banker,  self.server_update_signal, self.tlog_connection)
         self.write_lock.release()
@@ -140,7 +142,8 @@ class AccountManager:
         self.server_update_signal.set()
         print('Event trigger from new account')
         self.tlog_connection.log_account_created(user_id, starting_amount)
-        return f'Created new account for {card_holder}.'
+        # f'Created new account for {card_holder}.'
+        return True
 
     def delete(self, user_id):
         self.write_lock.acquire()
