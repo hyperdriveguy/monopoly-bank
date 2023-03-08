@@ -9,6 +9,8 @@ from markupsafe import escape
 
 from account_store import AccountManager
 
+TEMP_PASSWORD = 'temp'
+
 URLS = {
     'Accounts': 'accounts',
     'Transfer': 'transfer',
@@ -156,17 +158,24 @@ if __name__ == '__main__':
         query = ''
         # Check if new account was created
         if 'new-acc-name' in request.form:
+            if not current_user.banker:
+                flash('Operation only allowed for banker.')
+                return render_template('accounts.html.jinja', urls=URLS, make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup)
             new_id, new_name, new_cash = (
                 request.form['new-acc-id'],
                 request.form['new-acc-name'].title(),
                 int(request.form['new-acc-cash'])
             )
-            flash(managed_accs.new(new_id, new_name, 'temp', new_cash))
+            flash('Created new account:', managed_accs.new(new_id, new_name, TEMP_PASSWORD, new_cash))
+            flash(f'Temporary password for new user {new_id}: "{TEMP_PASSWORD}"')
             if 'account-redirect' in request.form:
                 return redirect(f'/{URLS["Accounts"]}/{urlify(request.form["account-redirect"])}')
             lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
         # Check if account was deleted
         elif 'del-acc-id' in request.form:
+            if not current_user.banker:
+                flash('Operation only allowed for banker.')
+                return render_template('accounts.html.jinja', urls=URLS, make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup)
             managed_accs.delete(request.form['del-acc-id'])
             flash(f'Deleted account for ID {request.form["del-acc-id"]}.')
             # This is required so the deleted account doesn't show on the page
