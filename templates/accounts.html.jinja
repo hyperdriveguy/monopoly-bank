@@ -6,8 +6,10 @@
     <input type="search" id="account-lookup-query" name="account-lookup-query" placeholder="Search for account..." required>
     <input type="submit" value="Search">
 </form>
+{% if is_banker %}
 <button id="new-account">New Account</button>
 <button id="del-account">Delete Account</button>
+{% endif %}
 <button id="refresh">Refresh Accounts</button>
 <section class="account-list">
     <form action="" method="post" id="make-new-acc" class="account-card hidden">

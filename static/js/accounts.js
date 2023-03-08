@@ -28,25 +28,29 @@ function post(path, params, method='post') {
     form.submit();
   }  
 
-new_account_button.addEventListener('click', () => {
-    new_account_form.classList.toggle('hidden');
-    individual_account_del_buttons.forEach(node => {
-        node.classList.add("hidden");
+if (new_account_button != null) {
+    new_account_button.addEventListener('click', () => {
+        new_account_form.classList.toggle('hidden');
+        individual_account_del_buttons.forEach(node => {
+            node.classList.add("hidden");
+        });
+        account_cards.forEach(node => {
+            node.classList.add("clickable");
+        })
     });
-    account_cards.forEach(node => {
-        node.classList.add("clickable");
-    })
-});
+}
 
-del_account_button.addEventListener('click', () => {
-    new_account_form.classList.add('hidden');
-    individual_account_del_buttons.forEach(node => {
-        node.classList.toggle("hidden");
+if (del_account_button != null) {
+    del_account_button.addEventListener('click', () => {
+        new_account_form.classList.add('hidden');
+        individual_account_del_buttons.forEach(node => {
+            node.classList.toggle("hidden");
+        });
+        account_cards.forEach(node => {
+            node.classList.toggle("clickable");
+        })
     });
-    account_cards.forEach(node => {
-        node.classList.toggle("clickable");
-    })
-});
+}
 
 individual_account_del_buttons.forEach(node => {
     node.addEventListener('click', () => {
