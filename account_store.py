@@ -170,7 +170,7 @@ class AccountManager:
 
         def match_in_query(acc):
             name_match = query.lower() in acc.name.lower()
-            id_match = query.lower() in acc.id.lower()
+            id_match = query.lower() in acc.ident.lower()
             return name_match or id_match
 
         if query.lower() in ('all', ''):
