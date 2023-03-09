@@ -60,6 +60,9 @@ def login_redirect(username, next_url):
         return abort(400)
     return redirect(next_url or '/')
 
+def render_generic(template_path, **kwargs):
+    render_template(template_path, is_banker=current_user.banker, kwargs)
+
 
 if __name__ == '__main__':
     app = Flask(__name__)
@@ -232,7 +235,6 @@ if __name__ == '__main__':
 
     @app.errorhandler(403)
     def unauthorized_page(e):
-        print(e)
         return render_template('unauthorized_access.html.jinja'), 403
 
 
