@@ -56,7 +56,6 @@ class Account:
     def is_anonymous(self):
         return False
 
-    # Note: this isn't the internal ID, but the one the user uses
     def get_id(self):
         return self.ident
 
@@ -90,7 +89,7 @@ class Account:
         return amount
 
     def get_transactions(self):
-        print(self.tlog_connection.log_get_by_id(self.ident))
+        return self.tlog_connection.log_get_by_id(self.ident)
 
 
 class AccountManager:

@@ -1,7 +1,11 @@
 {% extends "sidebar.html.jinja" %}
 {% block title %}Account - {{ acc.name }}{% endblock %}
 {% block content %}
-<h2>Account - {{ acc.name }}</h2>
+<h2>Account - {{ acc.name }}
+{% if acc.banker %}
+ - Banker
+{% endif %}
+</h2>
 <p id="info">{{ info }}</p>
 <p>ID: {{ acc.ident}}</p>
 <p><strong>${{ acc.cash}}</strong></p>
@@ -47,6 +51,29 @@
         <input type="submit" value="Submit">
     </form>
 </div>
+<section id="audit_log">
+    <h3>Audit Log</h3>
+    <table>
+    <thead>
+        <tr>
+        <th>Timestamp</th>
+        <th>Type</th>
+        <th>Account</th>
+        <th>Info</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for timestamp, trans_type, trans_acc, trans_info in account_log %}
+        <tr>
+            <td>{{ timestamp }}</td>
+            <td>{{ trans_type }}</td>
+            <td>{{ trans_acc }}</td>
+            <td>{{ trans_info }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+</section>
 {% endblock content %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/individual_account.js') }}"></script>

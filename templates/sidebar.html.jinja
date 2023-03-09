@@ -8,14 +8,26 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
         {% block stylesheets %}{% endblock %}
         <title>{% block title %}Placeholder Page{% endblock %} - Monopoly Banking System</title>
+        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/dollar-openclipart.svg') }}">
         {% endblock %}
     </head>
     <body>
         <nav class="side-bar">
             <a href="/"><img src="{{ url_for('static', filename='icons/home-2-line.svg') }}">Home</a>
+
+            {% if logged_in %}
+            <a href="/accounts/{{ user_id }}"><img src="{{ url_for('static', filename='/icons/abstract-user-flat-1.svg') }}">{{ user_realname}}</a>
+            {% else %}
+            <a href="/login"><img src="{{ url_for('static', filename='icons/abstract-user-flat-1.svg') }}">{{ user_realname}}</a>
+            {% endif %}
+
             <a href="/accounts"><img src="{{ url_for('static', filename='icons/bank-line.svg') }}">All Accounts</a>
+
+            {% if is_banker %}
             <a href="/transfer"><img src="{{ url_for('static', filename='icons/exchange-line.svg') }}">Bank Transfer</a>
             <a href="/change-cash"><img src="{{ url_for('static', filename='icons/wallet-3-line.svg') }}">Change Cash</a>
+            {% endif %}
+
             <a href="/properties"><img src="{{ url_for('static', filename='icons/community-line.svg') }}">Properties</a>
             <a href="/investments"><img src="{{ url_for('static', filename='icons/funds-line.svg') }}">Investments</a>
             <a href="/auctions"><img src="{{ url_for('static', filename='icons/shopping-cart-fill.svg') }}">Auctions</a>

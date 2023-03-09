@@ -61,7 +61,11 @@ def login_redirect(username, next_url):
     return redirect(next_url or '/')
 
 def render_generic(template_path, **kwargs):
-    render_template(template_path, is_banker=current_user.banker, kwargs)
+    user_realname = current_user.name if not current_user.is_anonymous else 'Log in'
+    user_id = current_user.ident if not current_user.is_anonymous else ''
+    is_banker = current_user.banker if not current_user.is_anonymous else False
+    print(current_user.is_anonymous)
+    return render_template(template_path, logged_in=(not current_user.is_anonymous), user_id=user_id, user_realname=user_realname, is_banker=is_banker, **kwargs)
 
 
 if __name__ == '__main__':
@@ -103,7 +107,7 @@ if __name__ == '__main__':
     def home_page():
         if not current_user.is_anonymous:
             flash(current_user)
-        return render_template('home.html.jinja')
+        return render_generic('home.html.jinja')
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -132,7 +136,7 @@ if __name__ == '__main__':
             else:
                 flash('Username for account already exists.')
 
-        return render_template('login.html.jinja')
+        return render_generic('login.html.jinja')
 
 
     @app.route('/logout', methods=['GET', 'POST'])
@@ -144,7 +148,6 @@ if __name__ == '__main__':
 
 
     @app.route('/accounts/', methods=['GET', 'POST'])
-    @login_required
     def accounts_main_page():
         managed_accs.recieved_update()
         # Show all accounts by default
@@ -160,8 +163,11 @@ if __name__ == '__main__':
                 request.form['new-acc-name'].title(),
                 int(request.form['new-acc-cash'])
             )
-            flash('Created new account')
-            flash(f'Temporary password for new user {new_id}: "{TEMP_PASSWORD}"')
+            if managed_accs.new(new_id, new_name, TEMP_PASSWORD, new_cash):
+                flash('Created new account.')
+                flash(f'Temporary password for new user {new_id}: "{TEMP_PASSWORD}"')
+            else:
+                flash('Could not create account. Does an ID for that account already exist?')
             if 'account-redirect' in request.form:
                 return redirect(url_for('individual_account_page', ident=request.form["account-redirect"]))
             lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
@@ -180,17 +186,16 @@ if __name__ == '__main__':
             lookup = sorted(managed_accs.search(query).values(), key=lambda a: a.name)
             flash(f'{len(lookup)} result{"s" if len(lookup) > 1 else ""} for search "{query}".')
 
-        return render_template('accounts.html.jinja', make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup, is_banker=current_user.banker)
+        return render_generic('accounts.html.jinja', make_url=urlify, num_accs=len(managed_accs.accounts_storage), lookup=lookup)
 
     @app.route('/accounts/<ident>', methods=['GET', 'POST'])
-    @login_required
     def individual_account_page(ident):
         managed_accs.recieved_update()
         ident = urlify(ident, reverse=True)
         target_account = managed_accs.query(ident)
         if target_account == 'Account does not exist.':
-            return render_template('no_existing_account.html.jinja', id=ident)
-        target_account.get_transactions()
+            return render_generic('no_existing_account.html.jinja', id=ident)
+        account_log = target_account.get_transactions()
         # Check for money transferring
         if 'transfer-amount' in request.form:
             flash(post_transfer(request.form))
@@ -201,7 +206,7 @@ if __name__ == '__main__':
             amount = target_account.deposit(int(request.form['deposit-amount']))
             flash(f'Deposited ${amount} into account.')
 
-        return render_template('individual_account.html.jinja', acc=target_account, is_banker=current_user.banker)
+        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log)
 
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
@@ -210,7 +215,7 @@ if __name__ == '__main__':
             abort(403)
         if 'id-card' in request.form:
             return redirect(url_for('individual_account_page', ident=request.form["id-card"]))
-        return render_template('change_cash.html.jinja')
+        return render_generic('change_cash.html.jinja')
 
     @app.route('/transfer', methods=['GET', 'POST'])
     @login_required
@@ -218,7 +223,7 @@ if __name__ == '__main__':
         if not current_user.banker:
             abort(403)
         flash(post_transfer(request.form))
-        return render_template('transfer.html.jinja')
+        return render_generic('transfer.html.jinja')
 
 
     @app.route('/properties')
@@ -226,16 +231,16 @@ if __name__ == '__main__':
     @app.route('/auctions')
     @app.route('/help')
     def placeholder_page():
-        return render_template('sidebar.html.jinja')
+        return render_generic('sidebar.html.jinja')
 
 
     @app.errorhandler(404)
     def not_found_page(e):
-        return render_template('sidebar.html.jinja'), 404
+        return render_generic('sidebar.html.jinja'), 404
 
     @app.errorhandler(403)
     def unauthorized_page(e):
-        return render_template('unauthorized_access.html.jinja'), 403
+        return render_generic('unauthorized_access.html.jinja'), 403
 
 
     @app.route('/nuke')

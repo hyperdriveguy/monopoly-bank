@@ -170,6 +170,38 @@ h3 input {
     max-width: 760px;
 }
 
+#audit_log {
+  overflow-x: scroll;
+}
+
+#audit_log table {
+  width: 100%;
+  border-collapse: collapse;
+  font-weight: normal;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  margin-bottom: 1em;
+  text-align: left;
+}
+
+#audit_log th {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ccc;
+  background-color: #f2f2f2;
+}
+
+#audit_log td {
+  padding: 8px;
+  border: 1px solid #ccc;
+}
+
+#audit_log tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+
 @media screen and (min-width: 1484px) {
     .account-list {
         grid-template-columns: 1fr 1fr 1fr;
