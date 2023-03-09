@@ -6,9 +6,11 @@
 <p>ID: {{ acc.ident}}</p>
 <p><strong>${{ acc.cash}}</strong></p>
 <div id="account-actions">
+    {% if is_banker %}
     <button id="withdraw">Do Withdraw</button>
     <button id="deposit">Do Deposit</button>
     <button id="transfer">Do Transfer</button>
+    {% endif %}
 </div>
 <div id="account-forms" class="wide-forms">
     <form action="" method="post" id="withdraw-form" class="account-card hidden">

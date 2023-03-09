@@ -203,6 +203,8 @@ if __name__ == '__main__':
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
     def change_cash():
+        if not current_user.banker:
+            abort(403)
         if 'id-card' in request.form:
             return redirect(url_for('individual_account_page', ident=request.form["id-card"]))
         return render_template('change_cash.html.jinja')
@@ -210,6 +212,8 @@ if __name__ == '__main__':
     @app.route('/transfer', methods=['GET', 'POST'])
     @login_required
     def transfer():
+        if not current_user.banker:
+            abort(403)
         flash(post_transfer(request.form))
         return render_template('transfer.html.jinja')
 
@@ -225,6 +229,11 @@ if __name__ == '__main__':
     @app.errorhandler(404)
     def not_found_page(e):
         return render_template('sidebar.html.jinja'), 404
+
+    @app.errorhandler(403)
+    def unauthorized_page(e):
+        print(e)
+        return render_template('unauthorized_access.html.jinja'), 403
 
 
     @app.route('/nuke')
