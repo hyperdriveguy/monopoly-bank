@@ -198,11 +198,17 @@ if __name__ == '__main__':
         account_log = target_account.get_transactions()
         # Check for money transferring
         if 'transfer-amount' in request.form:
+            if current_user.is_anonymous or not current_user.banker:
+                abort(403)
             flash(post_transfer(request.form))
         elif 'withdraw-amount' in request.form:
+            if current_user.is_anonymous or not current_user.banker:
+                abort(403)
             amount = target_account.withdraw(int(request.form['withdraw-amount']))
             flash(f'Withdrew ${amount} from account.')
         elif 'deposit-amount' in request.form:
+            if current_user.is_anonymous or not current_user.banker:
+                abort(403)
             amount = target_account.deposit(int(request.form['deposit-amount']))
             flash(f'Deposited ${amount} into account.')
 
