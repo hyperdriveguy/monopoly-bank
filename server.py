@@ -9,6 +9,8 @@ from markupsafe import escape
 
 from account_store import AccountManager
 
+from property_manger import PropertyManager
+
 TEMP_PASSWORD = 'temp'
 
 def urlify(ident, reverse=False):
@@ -80,6 +82,9 @@ if __name__ == '__main__':
     login_manager.login_view = 'login'
 
     managed_accs = AccountManager()
+
+    managed_props = PropertyManager('property_set.json')
+    print(managed_props.all_properties)
 
     @login_manager.user_loader
     def load_user(ident):
@@ -233,6 +238,10 @@ if __name__ == '__main__':
 
 
     @app.route('/properties')
+    def properties_page():
+        return render_generic('properties.html.jinja', make_url=urlify, property_list=managed_props.all_properties)
+
+
     @app.route('/investments')
     @app.route('/auctions')
     @app.route('/help')

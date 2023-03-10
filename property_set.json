@@ -1,0 +1,252 @@
+{
+    "Mediterranean Avenue": {
+        "type": "buildable",
+        "color": "brown",
+        "rent": [2, 4, 10, 30, 90, 160, 250],
+        "cost": {
+            "property": 60,
+            "houses": 50,
+            "hotels": 50
+        }
+    },
+    "Baltic Avenue": {
+        "type": "buildable",
+        "color": "brown",
+        "rent": [4, 8, 20, 60, 180, 320, 450],
+        "cost": {
+            "property": 60,
+            "houses": 50,
+            "hotels": 50
+        }
+    },
+    "Oriental Avenue": {
+        "type": "buildable",
+        "color": "lightblue",
+        "rent": [6, 12, 30, 90, 270, 400, 550],
+        "cost": {
+            "property": 100,
+            "houses": 50,
+            "hotels": 50
+        }
+    },
+    "Vermont Avenue": {
+        "type": "buildable",
+        "color": "lightblue",
+        "rent": [6, 12, 30, 90, 270, 400, 550],
+        "cost": {
+            "property": 100,
+            "houses": 50,
+            "hotels": 50
+        }
+    },
+    "Connecticut Avenue": {
+        "type": "buildable",
+        "color": "lightblue",
+        "rent": [8, 16, 40, 100, 300, 450, 600],
+        "cost": {
+            "property": 120,
+            "houses": 50,
+            "hotels": 50
+        }
+    },
+    "St. Charles Place": {
+        "type": "buildable",
+        "color": "pink",
+        "rent": [10, 20, 50, 150, 450, 625, 750],
+        "cost": {
+            "property": 140,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "States Avenue": {
+        "type": "buildable",
+        "color": "pink",
+        "rent": [10, 20, 50, 150, 450, 625, 750],
+        "cost": {
+            "property": 140,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "Virginia Avenue": {
+        "type": "buildable",
+        "color": "pink",
+        "rent": [12, 24, 60, 180, 500, 700, 900],
+        "cost": {
+            "property": 160,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "St. James Place": {
+        "type": "buildable",
+        "color": "orange",
+        "rent": [14, 28, 70, 200, 550, 750, 950],
+        "cost": {
+            "property": 180,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "Tennessee Avenue": {
+        "type": "buildable",
+        "color": "orange",
+        "rent": [14, 28, 70, 200, 550, 750, 950],
+        "cost": {
+            "property": 180,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "New York Avenue": {
+        "type": "buildable",
+        "color": "orange",
+        "rent": [16, 32, 80, 220, 600, 800, 1000],
+        "cost": {
+            "property": 200,
+            "houses": 100,
+            "hotels": 100
+        }
+    },
+    "Kentucky Avenue": {
+        "type": "buildable",
+        "color": "red",
+        "rent": [18, 36, 90, 250, 700, 875, 1050],
+        "cost": {
+            "property": 220,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Indiana Avenue": {
+        "type": "buildable",
+        "color": "red",
+        "rent": [18, 36, 90, 250, 700, 875, 1050],
+        "cost": {
+            "property": 220,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Illinois Avenue": {
+        "type": "buildable",
+        "color": "red",
+        "rent": [20, 40, 100, 300, 750, 925, 1100],
+        "cost": {
+            "property": 240,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Atlantic Avenue": {
+        "type": "buildable",
+        "color": "yellow",
+        "rent": [22, 44, 110, 330, 800, 975, 1150],
+        "cost": {
+            "property": 260,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Ventnor Avenue": {
+        "type": "buildable",
+        "color": "yellow",
+        "rent": [22, 44, 110, 330, 800, 975, 1150],
+        "cost": {
+            "property": 260,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Marvin Gardens": {
+        "type": "buildable",
+        "color": "yellow",
+        "rent": [24, 48, 120, 360, 850, 1025, 1200],
+        "cost": {
+            "property": 280,
+            "houses": 150,
+            "hotels": 150
+        }
+    },
+    "Pacific Avenue": {
+        "type": "buildable",
+        "color": "green",
+        "rent": [26, 52, 130, 390, 900, 1100, 1275],
+        "cost": {
+            "property": 300,
+            "houses": 200,
+            "hotels": 200
+        }
+    },
+    "North Carolina Avenue": {
+        "type": "buildable",
+        "color": "green",
+        "rent": [26, 52, 130, 390, 900, 1100, 1275],
+        "cost": {
+            "property": 300,
+            "houses": 200,
+            "hotels": 200
+        }
+    },
+    "Pennsylvania Avenue": {
+        "type": "buildable",
+        "color": "green",
+        "rent": [28, 56, 150, 450, 1000, 1200, 1400],
+        "cost": {
+            "property": 320,
+            "houses": 200,
+            "hotels": 200
+        }
+    },
+    "Park Place": {
+        "type": "buildable",
+        "color": "darkblue",
+        "rent": [35, 70, 175, 500, 1100, 1300, 1500],
+        "cost": {
+            "property": 350,
+            "houses": 200,
+            "hotels": 200
+        }
+    },
+    "Boardwalk": {
+        "type": "buildable",
+        "color": "darkblue",
+        "rent": [50, 100, 200, 600, 1400, 1700, 2000],
+        "cost": {
+            "property": 400,
+            "houses": 200,
+            "hotels": 200
+        }
+    },
+    "B&O Railroad": {
+        "type": "railroad",
+        "rent": [25, 50, 100, 200],
+        "cost": 200
+    },
+    "Reading Railroad": {
+        "type": "railroad",
+        "rent": [25, 50, 100, 200],
+        "cost": 200
+    },
+    "Pennsylvania Railroad": {
+        "type": "railroad",
+        "rent": [25, 50, 100, 200],
+        "cost": 200
+    },
+    "Short Line": {
+        "type": "railroad",
+        "rent": [25, 50, 100, 200],
+        "cost": 200
+    },
+    "Electric Company": {
+        "type": "utility",
+        "rent": [4, 10],
+        "cost": 150
+    },
+    "Water Works": {
+        "type": "utility",
+        "rent": [4, 10],
+        "cost": 150
+    }
+}

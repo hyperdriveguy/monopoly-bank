@@ -1,0 +1,31 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Properties{% endblock %}
+{% block content %}
+<h2>Properties</h2>
+<section class="account-list">
+    {% for prop in property_list %}
+    <a href="/properties/{{ make_url(prop.name) }}" class="account-card clickable">
+        <article {% if prop.mortgaged %}style="background-color:red"{% endif %}>
+            <h3 {% if prop.color %}style="background-color:{{ prop.color }}"{% endif %}>{{ prop.name }}</h3>
+            <p>Owner: {{ prop.owner }}</p>
+            {% if prop.owner %}
+                <p>Property cost: ${{ prop.costs['property'] }}</p>
+            {% else %}
+                <p>Rent cost: ${{ prop.rent }}</p>
+                {% for item, cost in prop.costs.items() if item != 'property' %}
+                    <p>{{ item.title() }}: ${{ cost }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <ol>
+            {% for rate in prop.rent_rates %}
+                <li>${{ rate }}</li>
+            {% endfor %}
+            </ol>
+        </article>
+    </a>
+    {% endfor %}
+</section>
+{% endblock content %}
+{% block scripts %}
+{% endblock %}
