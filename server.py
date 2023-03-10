@@ -160,7 +160,7 @@ if __name__ == '__main__':
         query = ''
         # Check if new account was created
         if 'new-acc-name' in request.form:
-            if not current_user.banker:
+            if current_user.is_anonymous or not current_user.banker:
                 flash('Operation only allowed for banker.')
                 return redirect(url_for('accounts_main_page'))
             new_id, new_name, new_cash = (
@@ -178,7 +178,7 @@ if __name__ == '__main__':
             lookup = sorted(managed_accs.accounts_storage.values(), key=lambda a: a.name)
         # Check if account was deleted
         elif 'del-acc-id' in request.form:
-            if not current_user.banker:
+            if current_user.is_anonymous or not current_user.banker:
                 flash('Operation only allowed for banker.')
                 return redirect(url_for('accounts_main_page'))
             managed_accs.delete(request.form['del-acc-id'])
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         ident = urlify(ident, reverse=True)
         target_account = managed_accs.query(ident)
         if target_account == 'Account does not exist.':
-            return render_generic('no_existing_account.html.jinja', id=ident)
+            return render_generic('no_existing_account.html.jinja', id=ident) if not current_user.is_anonymous and current_user.banker else abort(404)
         account_log = target_account.get_transactions()
         # Check for money transferring
         if 'transfer-amount' in request.form:
@@ -237,9 +237,14 @@ if __name__ == '__main__':
         return render_generic('transfer.html.jinja')
 
 
-    @app.route('/properties')
+    @app.route('/properties/')
     def properties_page():
         return render_generic('properties.html.jinja', make_url=urlify, property_list=managed_props.all_properties)
+
+
+    @app.route('/properties/<prop_name>')
+    def individual_property_page(prop_name):
+        return render_generic('individual_property.html.jinja', prop=managed_props.properties[prop_name])
 
 
     @app.route('/investments')

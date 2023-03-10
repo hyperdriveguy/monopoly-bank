@@ -3,7 +3,7 @@ const new_account_form = document.querySelector('#make-new-acc');
 
 const del_account_button = document.querySelector('#del-account');
 const individual_account_del_buttons = document.querySelectorAll('.indv-acc-del');
-const account_cards = document.querySelectorAll('a.account-card');
+const account_cards = document.querySelectorAll('a.card-stylize');
 
 const refresh_button = document.querySelector('#refresh');
 

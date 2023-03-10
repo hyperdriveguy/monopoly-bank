@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Account Not Found</h2>
 <p>Specified account ID does not exist. You may create it below:</p>
-<form action="/{{ urls['Accounts'] }}" method="post" id="make-new-acc" class="account-card wide-forms">
+<form action="/accounts" method="post" id="make-new-acc" class="card-stylize wide-forms">
     <h3><input type="text" id="new-acc-name" name="new-acc-name" placeholder="Name for new account" autofocus required></h3>
     <div class="label-align">
         <label for="new-acc-id">ID:</label><input type="text" id="new-acc-id" name="new-acc-id" placeholder="ID for new account" value="{{ id }}" required><br>

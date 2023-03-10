@@ -1,7 +1,7 @@
 import json
 from functools import cached_property
 
-class Property:
+class Buildable:
     def __init__(self, name: str, color: str, rent_rates: list, costs: dict):
         # Base card properties
         self.name = name
@@ -55,26 +55,24 @@ class Utility:
 
 class PropertyManager:
     def __init__(self, property_set):
-        self.buildable = {}
-        self.railroad = {}
-        self.utility = {}
+        self.properties = {}
 
         with open(property_set, 'r') as prop_file:
             loaded_properties = json.load(prop_file)
 
         for name, attributes in loaded_properties.items():
             if attributes['type'] == 'buildable':
-                self.buildable[name] = Property(name, attributes['color'], attributes['rent'], attributes['cost'])
+                self.properties[name] = Buildable(name, attributes['color'], attributes['rent'], attributes['cost'])
             elif attributes['type'] == 'railroad':
-                self.railroad[name] = Railroad(name, attributes['rent'], attributes['cost'])
+                self.properties[name] = Railroad(name, attributes['rent'], attributes['cost'])
             elif attributes['type'] == 'utility':
-                self.utility[name] = Utility(name, attributes['rent'], attributes['cost'])
+                self.properties[name] = Utility(name, attributes['rent'], attributes['cost'])
             else:
                 raise ValueError('No type found for Monopoly Property type', attributes['type'])
 
     @cached_property
     def all_properties(self):
-        return tuple(self.buildable.values()) + tuple(self.railroad.values()) + tuple(self.utility.values())
+        return tuple(self.properties.values())
 
     @cached_property
     def unowned(self):
