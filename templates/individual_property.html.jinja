@@ -2,9 +2,9 @@
 {% block title %}{{ prop.name }}{% endblock %}
 {% block content %}
 <h2 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h2>
-<section {% if prop.mortgaged %}style="background-color:red"{% endif %}>
+<section class="{% if prop.mortgaged %}mortgaged{% endif %}">
     <p>Owner: {{ prop.owner }}</p>
-    {% if prop.owner %}
+    {% if not prop.owner %}
         <p>Property cost: ${{ prop.costs['property'] }}</p>
     {% else %}
         <p>Rent cost: ${{ prop.rent }}</p>
@@ -12,12 +12,10 @@
             <p>{{ item.title() }}: ${{ cost }}</p>
         {% endfor %}
     {% endif %}
-
-    <ol>
-    {% for rate in prop.rent_rates %}
-        <li>${{ rate }}</li>
+    <p>Rent tiers:</p>
+    {% for tier, rate in prop.rent_rates.items() %}
+        <p>{{ tier }}: ${{ rate }}</p>
     {% endfor %}
-    </ol>
 </section>
 {% endblock content %}
 {% block scripts %}

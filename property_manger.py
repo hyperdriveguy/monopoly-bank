@@ -10,7 +10,7 @@ class Buildable:
         self.costs = costs
         # Current attributes in play
         self.owner = None
-        self.rent_rate_index = 0
+        self.rent_rate_index = "Base"
         self.mortgaged = False
 
     @cached_property
@@ -27,7 +27,7 @@ class Railroad:
         self.costs = {'property': cost}
         # Current attributes in play
         self.owner = None
-        self.rent_rate_index = 0
+        self.rent_rate_index = "Base"
         self.mortgaged = False
 
     @cached_property
@@ -44,7 +44,7 @@ class Utility:
         self.costs = {'property': cost}
         # Current attributes in play
         self.owner = None
-        self.rent_rate_index = 0
+        self.rent_rate_index = "Base"
         self.mortgaged = False
 
     @cached_property
