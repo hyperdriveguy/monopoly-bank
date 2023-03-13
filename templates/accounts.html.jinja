@@ -12,7 +12,7 @@
 {% endif %}
 <button id="refresh">Refresh Accounts</button>
 <section class="account-list">
-    <form action="" method="post" id="make-new-acc" class="account-card hidden">
+    <form action="" method="post" id="make-new-acc" class="card-stylize hidden">
         <h3><input type="text" id="new-acc-name" name="new-acc-name" placeholder="Name for new account" required></h3>
         <div class="label-align">
             <label for="new-acc-id">ID:</label><input type="text" id="new-acc-id" name="new-acc-id" placeholder="ID for new account" required><br>
@@ -25,7 +25,7 @@
     {% for acc in lookup %}
     <div class="acc-wrapper">
     <button id="del-acc-{{ acc.ident }}" class="indv-acc-del hidden" account="{{ acc.ident }}">Delete</button>
-    <a href="{{ make_url(acc.ident) }}" class="account-card clickable">
+    <a href="{{ make_url(acc.ident) }}" class="card-stylize clickable">
         <article>
             <h3>{{ acc.name }}</h3>
             <p>ID: {{ acc.ident }}</p>

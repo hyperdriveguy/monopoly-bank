@@ -1,0 +1,22 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}{{ prop.name }}{% endblock %}
+{% block content %}
+<h2 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h2>
+<section class="{% if prop.mortgaged %}mortgaged{% endif %}">
+    <p>Owner: {{ prop.owner }}</p>
+    {% if not prop.owner %}
+        <p>Property cost: ${{ prop.costs['property'] }}</p>
+    {% else %}
+        <p>Rent cost: ${{ prop.rent }}</p>
+        {% for item, cost in prop.costs.items() if item != 'property' %}
+            <p>{{ item.title() }}: ${{ cost }}</p>
+        {% endfor %}
+    {% endif %}
+    <p>Rent tiers:</p>
+    {% for tier, rate in prop.rent_rates.items() %}
+        <p>{{ tier }}: ${{ rate }}</p>
+    {% endfor %}
+</section>
+{% endblock content %}
+{% block scripts %}
+{% endblock %}

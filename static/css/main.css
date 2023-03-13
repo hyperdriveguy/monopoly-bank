@@ -82,7 +82,7 @@ img {
     width: 100%;
 }
 
-.account-card {
+.card-stylize {
     /* padding: 1em; */
     min-width: min-content;
     text-decoration: none;
@@ -91,7 +91,7 @@ img {
     pointer-events: none;
 }
 
-.account-card article, form.account-card {
+.card-stylize article, form.card-stylize {
 
     border: solid 2px black;
     border-radius: 5px;
@@ -101,7 +101,7 @@ img {
     pointer-events: initial;
 }
 
-.account-card h3 {
+.card-stylize h3 {
     text-align: center;
     background-color: #111;
     color: #818181;
@@ -109,26 +109,30 @@ img {
     margin: 0;
 }
 
-.account-card p {
+.card-stylize p {
     margin: 0.5em 1em;
 }
 
-a.account-card.clickable:hover article {
+a.card-stylize.clickable:hover article {
     background-color: #111;
     color: #818181;
 }
 
-a.account-card.clickable:hover h3 {
+a.card-stylize.clickable:hover h3 {
     background-color: #818181;
     color: #111;
 }
 
-form.account-card {
+form.card-stylize {
     pointer-events: initial;
 }
 
-.account-card input {
+.card-stylize input {
     width: 95%;
+}
+
+.mortgaged {
+    background-color: darkred;
 }
 
 input {
@@ -202,16 +206,22 @@ h3 input {
 }
 
 
-@media screen and (min-width: 1484px) {
+@media screen and (min-width: 1506px) {
+    .account-list {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+}
+
+@media screen and (min-width: 1164px) and (max-width: 1505px) {
     .account-list {
         grid-template-columns: 1fr 1fr 1fr;
     }
 }
 
-@media screen and (min-width: 1056px) and (max-width: 1483px) {
+@media screen and (min-width: 822px) and (max-width: 1163px) {
     .account-list {
         grid-template-columns: 1fr 1fr;
-    }    
+    }
 }
 
 @media screen and (max-width: 600px) {
