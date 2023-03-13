@@ -206,16 +206,22 @@ h3 input {
 }
 
 
-@media screen and (min-width: 1484px) {
+@media screen and (min-width: 1506px) {
+    .account-list {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+}
+
+@media screen and (min-width: 1164px) and (max-width: 1505px) {
     .account-list {
         grid-template-columns: 1fr 1fr 1fr;
     }
 }
 
-@media screen and (min-width: 1056px) and (max-width: 1483px) {
+@media screen and (min-width: 822px) and (max-width: 1163px) {
     .account-list {
         grid-template-columns: 1fr 1fr;
-    }    
+    }
 }
 
 @media screen and (max-width: 600px) {

@@ -7,10 +7,11 @@
     <a href="/properties/{{ make_url(prop.name) }}" class="card-stylize clickable {% if prop.mortgaged %}mortgaged{% endif %}">
         <article>
             <h3 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h3>
-            <p>Owner: {{ prop.owner }}</p>
             {% if not prop.owner %}
+                <p>Owner: Bank</p>
                 <p>Property cost: ${{ prop.costs['property'] }}</p>
             {% else %}
+                <p>Owner: {{ prop.owner }}</p>
                 <p>Rent cost: ${{ prop.rent }}</p>
                 {% for item, cost in prop.costs.items() if item != 'property' %}
                     <p>{{ item.title() }}: ${{ cost }}</p>
