@@ -84,7 +84,6 @@ if __name__ == '__main__':
     managed_accs = AccountManager()
 
     managed_props = PropertyManager('property_set.json')
-    print(managed_props.all_properties)
 
     @login_manager.user_loader
     def load_user(ident):
