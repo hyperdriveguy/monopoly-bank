@@ -52,27 +52,29 @@
     </form>
 </div>
 <section id="audit_log">
-    <h3>Audit Log</h3>
-    <table>
-    <thead>
-        <tr>
-        <th>Timestamp</th>
-        <th>Type</th>
-        <th>Account</th>
-        <th>Info</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for timestamp, trans_type, trans_acc, trans_info in account_log %}
-        <tr>
-            <td>{{ timestamp }}</td>
-            <td>{{ trans_type }}</td>
-            <td>{{ trans_acc }}</td>
-            <td>{{ trans_info }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-    </table>
+    <details>
+        <summary>
+            <h3>Audit Log</h3>
+        </summary>
+            <table>
+            <thead>
+                <tr>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for timestamp, trans_type, trans_acc, trans_info in account_log %}
+                <tr>
+                    <td>{{ timestamp }}</td>
+                    <td>{{ trans_type }}</td>
+                    <td>{{ trans_info }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+    </details>
 </section>
 {% endblock content %}
 {% block scripts %}

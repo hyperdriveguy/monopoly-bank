@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import os
 import random
+import json
 from threading import Event, Lock
 
 from tlog import TransactionLog
@@ -30,7 +31,7 @@ def verify_password(salt: bytes, pw_hash: bytes, password: str):
 
 class Account:
 
-    def __init__(self, ident, name, pw_salt, pw_hash, starting_cash:int, properties, banker, update_event, log_connection):
+    def __init__(self, ident, name, pw_salt, pw_hash, starting_cash: int, properties: set, banker, update_event, log_connection):
         self.ident = ident
         self.name = name.capitalize()
         self.pw_salt = pw_salt
@@ -58,6 +59,12 @@ class Account:
 
     def get_id(self):
         return self.ident
+
+    def add_property(self, prop):
+        self.write_lock.acquire()
+        self.properties.add(prop)
+        self.write_lock.release()
+        self.tlog_connection.update_properties(self.ident, json.dumps(list(self.properties)))
 
     def withdraw(self, amount, log=True):
         self.write_lock.acquire()
@@ -110,7 +117,7 @@ class AccountManager:
         self.write_lock.acquire()
         self.accounts_storage = dict()
         for acc in account_tuples:
-            self.accounts_storage[acc[0]] = Account(*acc, self.server_update_signal, self.tlog_connection)
+            self.accounts_storage[acc[0]] = Account(acc[0], acc[1], acc[2], acc[3], acc[4], set(json.loads(acc[5])), acc[6], self.server_update_signal, self.tlog_connection)
         self.write_lock.release()
         self.server_update_signal.set()
         print('Event trigger from load_saved')

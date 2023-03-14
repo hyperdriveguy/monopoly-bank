@@ -130,7 +130,7 @@ class TransactionLog:
     def create_account(self, ident, name, pw_salt, pw_hash, cash, is_banker):
         self.exec_queue.put((
             True,
-            "INSERT INTO Accounts VALUES (?, ?, ?, ?, ?, NULL, ?)",
+            "INSERT INTO Accounts VALUES (?, ?, ?, ?, ?, '[]', ?)",
             (ident, name, pw_salt, pw_hash, cash, is_banker)
         ))
 
@@ -139,6 +139,13 @@ class TransactionLog:
             True,
             "UPDATE Accounts SET cash=? WHERE id=?",
             (cash, ident)
+        ))
+
+    def update_properties(self, ident, properties):
+        self.exec_queue.put((
+            True,
+            "UPDATE Accounts SET properties=? WHERE id=?",
+            (properties, ident)
         ))
 
     def delete_account(self, ident):

@@ -13,10 +13,10 @@
             {% else %}
                 <p>Owner: {{ prop.owner }}</p>
                 <p>Rent cost: ${{ prop.rent }}</p>
-                {% for item, cost in prop.costs.items() if item != 'property' %}
-                    <p>{{ item.title() }}: ${{ cost }}</p>
-                {% endfor %}
             {% endif %}
+            {% for item, cost in prop.costs.items() if item != 'property' %}
+                <p>{{ item.title() }}: ${{ cost }}</p>
+            {% endfor %}
             <p>Rent tiers:</p>
             <ul>
             {% for tier, rate in prop.rent_rates.items() %}
