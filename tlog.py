@@ -130,7 +130,7 @@ class TransactionLog:
     def create_account(self, ident, name, pw_salt, pw_hash, cash, is_banker):
         self.exec_queue.put((
             True,
-            "INSERT INTO Accounts VALUES (?, ?, ?, ?, ?, '[]', ?)",
+            "INSERT INTO Accounts VALUES (?, ?, ?, ?, ?, '{}', ?)",
             (ident, name, pw_salt, pw_hash, cash, is_banker)
         ))
 

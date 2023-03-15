@@ -14,11 +14,11 @@ class Property:
         self.rent_rate_index = "Base"
         self.mortgaged = False
 
-    @cached_property
+    @property
     def rent(self):
         return self.rent_rates[self.rent_rate_index]
 
-    @cached_property
+    @property
     def json(self):
         return {
             self.name: {
@@ -30,6 +30,19 @@ class Property:
                 'rent index': self.rent_rate_index,
                 'mortgaged': self.mortgaged
             }
+        }
+
+    def load_attributes(self, saved):
+        self.owner = saved['owner']
+        self.rent_rate_index = saved['rent_rate']
+        self.mortgaged = saved['mortgaged']
+
+    def save_attributes(self):
+        return {
+            'name': self.name,
+            'owner': self.owner,
+            'rent_rate': self.rent_rate_index,
+            'mortgaged': self.mortgaged
         }
 
 
@@ -52,10 +65,6 @@ class PropertyManager:
             else:
                 new_prop = Property(name, attributes['rent'], attributes['cost'], attributes['type'])
                 self.properties[name] = new_prop
-                if attributes['type'] in self.complete_sets:
-                    self.complete_sets[attributes['type']].add(new_prop)
-                else:
-                    self.complete_sets[attributes['type']] = {new_prop, }
 
     def check_full_set(self, color):
         last_owner = None
@@ -63,18 +72,32 @@ class PropertyManager:
             if prop.owner is None:
                 return False
             if prop.owner == last_owner or last_owner is None:
-                prop.owner = last_owner
+                last_owner = prop.owner
         return True
+
+    def update_color_set_rent(self, color):
+        """
+        Updates rent index if a color set is completed or broken.
+        If a color set is broken, the rent rate will be reset back to base rent.
+        """
+        is_full_set = self.check_full_set(color)
+        print('Color set is complete!') if is_full_set else print('Color set seperated.')
+        for prop in self.complete_sets[color]:
+            print(prop.name)
+            if is_full_set:
+                prop.rent_rate_index = 'Color set'
+            else:
+                prop.rent_rate_index = 'Base'
 
     @cached_property
     def all_properties(self):
         return tuple(self.properties.values())
 
-    @cached_property
+    @property
     def unowned(self):
         return tuple(filter(lambda p: True if p.owner is None else False, self.all_properties))
 
-    @cached_property
+    @property
     def owned(self):
         return tuple(filter(lambda p: False if p.owner is None else True, self.all_properties))
 

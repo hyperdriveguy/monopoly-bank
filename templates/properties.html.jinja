@@ -4,7 +4,7 @@
 <h2>Properties</h2>
 <section class="account-list">
     {% for prop in property_list %}
-    <a href="/properties/{{ make_url(prop.name) }}" class="card-stylize clickable {% if prop.mortgaged %}mortgaged{% endif %}">
+    <a href="/properties/{{ prop.name }}" class="card-stylize clickable {% if prop.mortgaged %}mortgaged{% endif %}">
         <article>
             <h3 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h3>
             {% if not prop.owner %}

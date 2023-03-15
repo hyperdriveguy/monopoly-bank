@@ -401,7 +401,7 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
         "cost": {
             "property": 200
@@ -413,7 +413,7 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
         "cost": {
             "property": 200
@@ -425,7 +425,7 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
         "cost": {
             "property": 200

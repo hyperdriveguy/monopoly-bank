@@ -31,9 +31,9 @@ def verify_password(salt: bytes, pw_hash: bytes, password: str):
 
 class Account:
 
-    def __init__(self, ident, name, pw_salt, pw_hash, starting_cash: int, properties: set, banker, update_event, log_connection):
+    def __init__(self, ident, name, pw_salt, pw_hash, starting_cash: int, properties: set, banker, update_event, log_connection, prop_manager):
         self.ident = ident
-        self.name = name.capitalize()
+        self.name = name.title()
         self.pw_salt = pw_salt
         self.pw_hash = pw_hash
         self.cash = starting_cash
@@ -43,6 +43,7 @@ class Account:
         # Prevent race conditions by using a mutex on sections that write or change data.
         self.write_lock = Lock()
         self.tlog_connection = log_connection
+        self.prop_manager = prop_manager
 
     def __str__(self):
         return f'{self.name}:\n\tID: {self.ident}\n\tBalance: ${self.cash}'
@@ -61,10 +62,17 @@ class Account:
         return self.ident
 
     def add_property(self, prop):
+
+        def serialize_props():
+            prop_names = list(map(lambda p: p.save_attributes(), self.properties))
+            return json.dumps(prop_names)
+
         self.write_lock.acquire()
+        prop.owner = self.ident
         self.properties.add(prop)
+        self.prop_manager.update_color_set_rent(prop.color)
         self.write_lock.release()
-        self.tlog_connection.update_properties(self.ident, json.dumps(list(self.properties)))
+        self.tlog_connection.update_properties(self.ident, serialize_props())
 
     def withdraw(self, amount, log=True):
         self.write_lock.acquire()
@@ -101,8 +109,9 @@ class Account:
 
 class AccountManager:
 
-    def __init__(self):
+    def __init__(self, prop_manager):
         self.accounts_storage = dict()
+        self.prop_manager = prop_manager
         self.server_update_signal = Event()
         # Prevent race conditions by locking sections that write or change data.
         self.write_lock = Lock()
@@ -113,11 +122,24 @@ class AccountManager:
         self.recieved_update()
 
     def load_saved(self):
+
+        def property_init(p_raw):
+            prop = self.prop_manager.properties[p_raw['name']]
+            prop.load_attributes(p_raw)
+            return prop
+
+        def deserialize_props(acc):
+            prop_raw = json.loads(acc[5])
+            props = set(map(property_init, prop_raw))
+            for p in props:
+                p.owner = acc[0]
+            return props
+
         account_tuples = self.tlog_connection.get_all_accounts()
         self.write_lock.acquire()
         self.accounts_storage = dict()
         for acc in account_tuples:
-            self.accounts_storage[acc[0]] = Account(acc[0], acc[1], acc[2], acc[3], acc[4], set(json.loads(acc[5])), acc[6], self.server_update_signal, self.tlog_connection)
+            self.accounts_storage[acc[0]] = Account(acc[0], acc[1], acc[2], acc[3], acc[4], deserialize_props(acc), acc[6], self.server_update_signal, self.tlog_connection, self.prop_manager)
         self.write_lock.release()
         self.server_update_signal.set()
         print('Event trigger from load_saved')
@@ -142,7 +164,7 @@ class AccountManager:
             # f'ID "{user_id}" already associated with an account!'
             return False
         is_banker = len(self.accounts_storage) == 0
-        self.accounts_storage[user_id] = Account(user_id, card_holder, pass_salt, pass_hash, starting_amount, set(), is_banker,  self.server_update_signal, self.tlog_connection)
+        self.accounts_storage[user_id] = Account(user_id, card_holder, pass_salt, pass_hash, starting_amount, set(), is_banker,  self.server_update_signal, self.tlog_connection, self.prop_manager)
         self.write_lock.release()
         self.tlog_connection.create_account(user_id, card_holder, pass_salt, pass_hash, starting_amount, is_banker)
         self.server_update_signal.set()
