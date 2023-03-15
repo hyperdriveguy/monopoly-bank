@@ -218,6 +218,35 @@ if __name__ == '__main__':
 
         return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log)
 
+    @app.route('/accounts/<ident>/api', methods=['POST'])
+    def individual_account_api(ident):
+        target_account = managed_accs.query(ident)
+        if not current_user.is_anonymous:
+            if 'request_money' in request.json:
+                target_account.add_money_request(request.json['request_money'])
+            if 'send_money' in request.json:
+                managed_accs.transfer(request.json['send_money']['from'], ident, request.json['send_money']['amount'])
+            return {'response': 'success'}
+        return {'response': 'invalid request'}
+
+
+    @app.route('/accounts/<ident>/listener')
+    def individual_account_listener(ident):
+        target_account = managed_accs.query(ident)
+        @stream_with_context
+        def signal_updates():
+            while True:
+                target_account.account_update_trigger.wait()
+                print(f'Sending update from account {ident}...')
+                yield 'data: {'
+                yield f'"money": {target_account.cash},'
+                yield f'"new_request": {target_account.money_requests[-1]}'
+                yield '}'
+                yield '\n\n'
+                target_account.account_update_trigger.clear()
+        return Response(signal_updates(), mimetype='text/event-stream')
+
+
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
     def change_cash():
@@ -259,6 +288,7 @@ if __name__ == '__main__':
                 return {'response': f'Made {request.json["new owner"]} new owner of {prop_name}'}
             # Property owner operations
             if current_user.ident == managed_props.properties[prop_name].owner:
+                # TODO: Request rent
                 pass
             else:
                 return {'response': 'No valid request made by non-anonymous user'}

@@ -39,11 +39,13 @@ class Account:
         self.cash = starting_cash
         self.properties = properties
         self.banker = banker
-        self.account_update_trigger = update_event
+        self.account_update_trigger = Event()
+        self.account_manager_trigger = update_event
         # Prevent race conditions by using a mutex on sections that write or change data.
         self.write_lock = Lock()
         self.tlog_connection = log_connection
         self.prop_manager = prop_manager
+        self.money_requests = []
 
     def __str__(self):
         return f'{self.name}:\n\tID: {self.ident}\n\tBalance: ${self.cash}'
@@ -61,6 +63,10 @@ class Account:
     def get_id(self):
         return self.ident
 
+    def add_money_request(self, data):
+        self.money_requests.append(data)
+        self.account_update_trigger.set()
+
     def add_property(self, prop):
 
         def serialize_props():
@@ -72,6 +78,7 @@ class Account:
         self.properties.add(prop)
         self.prop_manager.update_color_set_rent(prop.color)
         self.write_lock.release()
+        self.account_update_trigger.set()
         self.tlog_connection.update_properties(self.ident, serialize_props())
 
     def withdraw(self, amount, log=True):
@@ -84,6 +91,7 @@ class Account:
         self.write_lock.release()
         self.tlog_connection.update_account(self.ident, self.cash)
         self.account_update_trigger.set()
+        self.account_manager_trigger.set()
         print(f'Event trigger from account {self.ident} withdraw')
         if log:
             self.tlog_connection.log_account_withdraw(self.ident, amount)
@@ -95,6 +103,7 @@ class Account:
             self.cash += amount
             self.write_lock.release()
             self.tlog_connection.update_account(self.ident, self.cash)
+            self.account_manager_trigger.set()
             self.account_update_trigger.set()
             print(f'Event trigger from account {self.ident} deposit')
             if log:
