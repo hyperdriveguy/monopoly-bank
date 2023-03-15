@@ -6,7 +6,7 @@
             "Base": 2,
             "Color set": 4,
             "1 House": 10,
-            "2 Houses": 0,
+            "2 Houses": 50,
             "3 Houses": 90,
             "4 Houses": 160,
             "Hotel": 250
@@ -24,7 +24,7 @@
             "Base": 4,
             "Color set": 8,
             "1 House": 20,
-            "2 Houses": 0,
+            "2 Houses": 50,
             "3 Houses": 180,
             "4 Houses": 320,
             "Hotel": 450
@@ -42,7 +42,7 @@
             "Base": 6,
             "Color set": 12,
             "1 House": 30,
-            "2 Houses": 0,
+            "2 Houses": 50,
             "3 Houses": 270,
             "4 Houses": 400,
             "Hotel": 550
@@ -60,7 +60,7 @@
             "Base": 6,
             "Color set": 12,
             "1 House": 30,
-            "2 Houses": 0,
+            "2 Houses": 50,
             "3 Houses": 270,
             "4 Houses": 400,
             "Hotel": 550
@@ -401,9 +401,11 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
-        "cost": 200
+        "cost": {
+            "property": 200
+        }
     },
     "Reading Railroad": {
         "type": "railroad",
@@ -411,9 +413,11 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
-        "cost": 200
+        "cost": {
+            "property": 200
+        }
     },
     "Pennsylvania Railroad": {
         "type": "railroad",
@@ -421,9 +425,11 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
-        "cost": 200
+        "cost": {
+            "property": 200
+        }
     },
     "Short Line": {
         "type": "railroad",
@@ -431,24 +437,30 @@
             "Base": 25,
             "2 Owned": 50,
             "3 Owned": 100,
-            "All Owned": 200
+            "4 Owned": 200
         },
-        "cost": 200
+        "cost": {
+            "property": 200
+        }
     },
     "Electric Company": {
         "type": "utility",
         "rent": {
             "Base": 4,
-            "Both owned": 10
+            "2 owned": 10
         },
-        "cost": 150
+        "cost": {
+            "property": 150
+        }
     },
     "Water Works": {
         "type": "utility",
         "rent": {
             "Base": 4,
-            "Both owned": 10
+            "2 owned": 10
         },
-        "cost": 150
+        "cost": {
+            "property": 150
+        }
     }
 }

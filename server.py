@@ -66,7 +66,6 @@ def render_generic(template_path, **kwargs):
     user_realname = current_user.name if not current_user.is_anonymous else 'Log in'
     user_id = current_user.ident if not current_user.is_anonymous else ''
     is_banker = current_user.banker if not current_user.is_anonymous else False
-    print(current_user.is_anonymous)
     return render_template(template_path, logged_in=(not current_user.is_anonymous), user_id=user_id, user_realname=user_realname, is_banker=is_banker, **kwargs)
 
 
@@ -81,9 +80,10 @@ if __name__ == '__main__':
     login_manager.init_app(app)
     login_manager.login_view = 'login'
 
-    managed_accs = AccountManager()
-
     managed_props = PropertyManager('property_set.json')
+
+    managed_accs = AccountManager(managed_props)
+
 
     @login_manager.user_loader
     def load_user(ident):
@@ -238,12 +238,33 @@ if __name__ == '__main__':
 
     @app.route('/properties/')
     def properties_page():
-        return render_generic('properties.html.jinja', make_url=urlify, property_list=managed_props.all_properties)
+        return render_generic('properties.html.jinja', property_list=managed_props.all_properties)
 
 
     @app.route('/properties/<prop_name>')
     def individual_property_page(prop_name):
         return render_generic('individual_property.html.jinja', prop=managed_props.properties[prop_name])
+
+
+    @app.route('/properties/<prop_name>/api', methods=['POST'])
+    # @login_required
+    def individual_property_api(prop_name):
+        prop_obj = managed_props.properties[prop_name]
+        if not current_user.is_anonymous:
+            # Banker operations
+            if current_user.banker and 'new owner' in request.json:
+                acc_obj = managed_accs.query(request.json['new owner'])
+                acc_obj.withdraw(prop_obj.costs['property'])
+                acc_obj.add_property(prop_obj)
+                return {'response': f'Made {request.json["new owner"]} new owner of {prop_name}'}
+            # Property owner operations
+            if current_user.ident == managed_props.properties[prop_name].owner:
+                pass
+            else:
+                return {'response': 'No valid request made by non-anonymous user'}
+
+        user_name = str(current_user.ident if not current_user.is_anonymous else '')
+        return {'property': managed_props.properties[prop_name].json, 'request': request.json, 'user': user_name}
 
 
     @app.route('/investments')

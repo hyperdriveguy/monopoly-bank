@@ -51,28 +51,56 @@
         <input type="submit" value="Submit">
     </form>
 </div>
+<h3>Properties</h3>
+<section class="account-list">
+    {% for prop in acc.properties %}
+    <a href="/properties/{{ prop.name }}" class="card-stylize clickable {% if prop.mortgaged %}mortgaged{% endif %}">
+        <article>
+            <h3 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h3>
+            {% if not prop.owner %}
+                <p>Owner: Bank</p>
+                <p>Property cost: ${{ prop.costs['property'] }}</p>
+            {% else %}
+                <p>Owner: {{ prop.owner }}</p>
+                <p>Rent cost: ${{ prop.rent }}</p>
+            {% endif %}
+            {% for item, cost in prop.costs.items() if item != 'property' %}
+                <p>{{ item.title() }}: ${{ cost }}</p>
+            {% endfor %}
+            <p>Rent tiers:</p>
+            <ul>
+            {% for tier, rate in prop.rent_rates.items() %}
+                <li>{{ tier }}: ${{ rate }}</li>
+            {% endfor %}
+            </ol>
+        </article>
+    </a>
+    {% endfor %}
+</section>
 <section id="audit_log">
-    <h3>Audit Log</h3>
-    <table>
-    <thead>
-        <tr>
-        <th>Timestamp</th>
-        <th>Type</th>
-        <th>Account</th>
-        <th>Info</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for timestamp, trans_type, trans_acc, trans_info in account_log %}
-        <tr>
-            <td>{{ timestamp }}</td>
-            <td>{{ trans_type }}</td>
-            <td>{{ trans_acc }}</td>
-            <td>{{ trans_info }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-    </table>
+    <details>
+        <summary>
+            <h3>Audit Log</h3>
+        </summary>
+            <table>
+            <thead>
+                <tr>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for timestamp, trans_type, trans_acc, trans_info in account_log %}
+                <tr>
+                    <td>{{ timestamp }}</td>
+                    <td>{{ trans_type }}</td>
+                    <td>{{ trans_info }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+    </details>
 </section>
 {% endblock content %}
 {% block scripts %}
