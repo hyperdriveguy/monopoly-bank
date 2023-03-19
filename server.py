@@ -97,14 +97,6 @@ if __name__ == '__main__':
 
     managed_accs = AccountManager(managed_props)
 
-    # Run the application until stopped or encountering an error
-    try:
-        app.run()
-    # Clean up the application and close the TLog
-    finally:
-        for m in managed_accs.cleanup():
-            print(m)
-
 
     @login_manager.user_loader
     def load_user(ident):
@@ -328,6 +320,16 @@ if __name__ == '__main__':
                 yield 'data: {"sync": true}\n\n'
                 managed_accs.recieved_update()
         return Response(signal_updates(), mimetype='text/event-stream')
+
+
+    # Run the application until stopped or encountering an error
+    try:
+        app.run()
+    # Clean up the application and close the TLog
+    finally:
+        for m in managed_accs.cleanup():
+            print(m)
+
 
 if __name__ == 'wsgi':
     print('Avoid running with flask run as it doesn\'t allow the db to close.')
