@@ -4,7 +4,7 @@ This is a web application designed to be used for banking with the Monopoly boar
 It allows for cashless transactions and money storage to occur.
 I've been writing to learn more about web applications and see what works when complimenting a board game with additional software.
 
-*TODO: insert video demonstration*
+[Software Demo and Code Overview](https://youtu.be/cM9IbeM4O2Y)
 
 ## Usage
 Run `python server.py` to start the Flask server for local usage.
