@@ -2,6 +2,9 @@ import json
 from functools import cached_property
 
 class Property:
+    """
+    Contains data and methods for all types of Monopoly properties.
+    """
     def __init__(self, name: str, rent_rates: list, costs: dict, prop_type: str, color: str=None,):
         # Base card properties
         self.name = name
@@ -20,6 +23,10 @@ class Property:
 
     @property
     def json(self):
+        """
+        JSONified version of the property object.
+        This is not what is written to the DB.
+        """
         return {
             self.name: {
                 'type': self.prop_type,
@@ -33,11 +40,17 @@ class Property:
         }
 
     def load_attributes(self, saved):
+        """
+        Load state from saved JSON
+        """
         self.owner = saved['owner']
         self.rent_rate_index = saved['rent_rate']
         self.mortgaged = saved['mortgaged']
 
     def save_attributes(self):
+        """
+        Save the property identifier and non-permanent state
+        """
         return {
             'name': self.name,
             'owner': self.owner,
@@ -47,6 +60,10 @@ class Property:
 
 
 class PropertyManager:
+    """
+    Load properties from a given JSON file.
+    Operations for rent updates and checking color sets are provided.
+    """
     def __init__(self, property_set):
         self.properties = {}
         self.complete_sets = {}

@@ -30,7 +30,10 @@ def verify_password(salt: bytes, pw_hash: bytes, password: str):
 
 
 class Account:
-
+    """
+    Information and methods related to user accounts.
+    This includes game information as well and information needed for logging in and priviledge managment.
+    """
     def __init__(self, ident, name, pw_salt, pw_hash, starting_cash: int, properties: set, banker, update_event, log_connection, prop_manager):
         self.ident = ident
         self.name = name.title()
@@ -62,8 +65,14 @@ class Account:
         return self.ident
 
     def add_property(self, prop):
+        """
+        Add a property to the user and log it.
+        """
 
         def serialize_props():
+            """
+            Turn property into JSON for saving into TLog
+            """
             prop_names = list(map(lambda p: p.save_attributes(), self.properties))
             return json.dumps(prop_names)
 
@@ -108,6 +117,9 @@ class Account:
 
 
 class AccountManager:
+    """
+    Manages all user accounts and interactions that happen between accounts.
+    """
 
     def __init__(self, prop_manager):
         self.accounts_storage = dict()
@@ -147,6 +159,10 @@ class AccountManager:
         return f'Loaded {len(self.accounts_storage)} account{"s" if len(self.accounts_storage) != 1 else ""} from database'
 
     def nuke_accounts(self):
+        """
+        Deletes all accounts.
+        Used for starting a new game.
+        """
         self.accounts_storage = dict()
         self.tlog_connection.nuke_tables()
         return 'Deleted all account and transaction information.'
@@ -195,6 +211,9 @@ class AccountManager:
         return 'Account does not exist.'
 
     def search(self, query):
+        """
+        Do a fuzzy search for an account based on Real Name and ID information.
+        """
 
         def match_in_query(acc):
             name_match = query.lower() in acc.name.lower()

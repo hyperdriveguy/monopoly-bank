@@ -11,9 +11,13 @@ from account_store import AccountManager
 
 from property_manger import PropertyManager
 
+# TODO: Remove this
 TEMP_PASSWORD = 'temp'
 
 def urlify(ident, reverse=False):
+    """
+    Allow for a reversible "URLification" of characters.
+    """
     replace_chars = (
         ('?', '&a'),
         ('/', '&b'),
@@ -47,6 +51,9 @@ def urlify(ident, reverse=False):
 
 
 def is_safe_url(target):
+    """
+    Ensure the target URL is a valid and safe URL.
+    """
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and \
@@ -54,6 +61,9 @@ def is_safe_url(target):
 
 
 def login_redirect(username, next_url):
+    """
+    Preform the user login and redirect to the next URL.
+    """
     login_user(username)
     flash('Logged in successfully.')
     # is_safe_url should check if the url is safe for redirects.
@@ -63,6 +73,9 @@ def login_redirect(username, next_url):
     return redirect(next_url or '/')
 
 def render_generic(template_path, **kwargs):
+    """
+    Render a "generic" Jinja template that has common key arguments.
+    """
     user_realname = current_user.name if not current_user.is_anonymous else 'Log in'
     user_id = current_user.ident if not current_user.is_anonymous else ''
     is_banker = current_user.banker if not current_user.is_anonymous else False
@@ -84,9 +97,20 @@ if __name__ == '__main__':
 
     managed_accs = AccountManager(managed_props)
 
+    # Run the application until stopped or encountering an error
+    try:
+        app.run()
+    # Clean up the application and close the TLog
+    finally:
+        for m in managed_accs.cleanup():
+            print(m)
+
 
     @login_manager.user_loader
     def load_user(ident):
+        """
+        This is required for Flask-Login.
+        """
         user = managed_accs.query(ident)
         if user == 'Account does not exist.':
             return None
@@ -94,6 +118,9 @@ if __name__ == '__main__':
 
 
     def post_transfer(args):
+        """
+        Common code for transferring between accounts.
+        """
         info = ''
         if 'transfer-amount' in args:
             account1 = args['account-1-id']
@@ -105,6 +132,10 @@ if __name__ == '__main__':
             else:
                 info = managed_accs.transfer(account2, account1, int(amount))
         return info
+
+
+    # BEGIN TARGET PAGE ROUTES
+    # All functions below tie to specific site routes
 
 
     @app.route('/')
@@ -247,7 +278,6 @@ if __name__ == '__main__':
 
 
     @app.route('/properties/<prop_name>/api', methods=['POST'])
-    # @login_required
     def individual_property_api(prop_name):
         prop_obj = managed_props.properties[prop_name]
         if not current_user.is_anonymous:
@@ -259,6 +289,7 @@ if __name__ == '__main__':
                 return {'response': f'Made {request.json["new owner"]} new owner of {prop_name}'}
             # Property owner operations
             if current_user.ident == managed_props.properties[prop_name].owner:
+                # TODO: add property owner operations
                 pass
             else:
                 return {'response': 'No valid request made by non-anonymous user'}
@@ -267,6 +298,7 @@ if __name__ == '__main__':
         return {'property': managed_props.properties[prop_name].json, 'request': request.json, 'user': user_name}
 
 
+    # TODO: Finish pages
     @app.route('/investments')
     @app.route('/auctions')
     @app.route('/help')
@@ -274,6 +306,7 @@ if __name__ == '__main__':
         return render_generic('sidebar.html.jinja')
 
 
+    # Error handlers
     @app.errorhandler(404)
     def not_found_page(e):
         return render_generic('sidebar.html.jinja'), 404
@@ -283,11 +316,8 @@ if __name__ == '__main__':
         return render_generic('unauthorized_access.html.jinja'), 403
 
 
-    @app.route('/nuke')
-    @login_required
-    def nuke():
-        return managed_accs.nuke_accounts()
-
+    # Event stream that triggers on any change
+    # TODO: Make this trigger with more specific changes
     @app.route('/bruh')
     def bruh():
         @stream_with_context
@@ -298,13 +328,6 @@ if __name__ == '__main__':
                 yield 'data: {"sync": true}\n\n'
                 managed_accs.recieved_update()
         return Response(signal_updates(), mimetype='text/event-stream')
-
-
-    try:
-        app.run()
-    finally:
-        for m in managed_accs.cleanup():
-            print(m)
 
 if __name__ == 'wsgi':
     print('Avoid running with flask run as it doesn\'t allow the db to close.')
