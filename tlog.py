@@ -62,6 +62,19 @@ class TransactionLog:
                 FOREIGN KEY (auction_id) REFERENCES Auctions(auction_id))
             """
         )
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS Loans(
+                loan_id TEXT PRIMARY KEY,
+                borrower_id TEXT,
+                principal INTEGER,
+                interest_rate REAL,
+                payment_interval INTEGER,
+                created_at REAL,
+                status TEXT,
+                amount_paid INTEGER,
+                next_payment_due REAL)
+            """
+        )
         while True:
             try:
                 next_command = self.exec_queue.get()
@@ -286,3 +299,50 @@ class TransactionLog:
         trans_type = 'Auction Cancelled'
         info = f'Auction: {auction_id}'
         self._send_transaction_to_listener(trans_type, seller_id, info)
+
+    # Loan methods
+    def create_loan(self, loan_id, borrower_id, principal, interest_rate, payment_interval, created_at, next_payment_due):
+        self.exec_queue.put((
+            True,
+            "INSERT INTO Loans VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?)",
+            (loan_id, borrower_id, principal, interest_rate, payment_interval, created_at, next_payment_due)
+        ))
+        trans_type = 'Loan Created'
+        info = f'Loan ID: {loan_id}, Amount: ${principal}, Interest: {int(interest_rate * 100)}%'
+        self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    def get_all_loans(self):
+        self.exec_queue.put((
+            False,
+            "SELECT * FROM Loans",
+            None
+        ))
+        return self.receive_data.get()
+
+    def update_loan(self, loan_id, amount_paid, status, next_payment_due):
+        self.exec_queue.put((
+            True,
+            "UPDATE Loans SET amount_paid=?, status=?, next_payment_due=? WHERE loan_id=?",
+            (amount_paid, status, next_payment_due, loan_id)
+        ))
+
+    def log_loan_payment(self, loan_id, borrower_id, amount, paid_off):
+        trans_type = 'Loan Payment'
+        status = ' - PAID OFF' if paid_off else ''
+        info = f'Loan ID: {loan_id}, Payment: ${amount}{status}'
+        self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    def log_loan_default(self, loan_id, borrower_id):
+        trans_type = 'Loan Default'
+        info = f'Loan ID: {loan_id} - DEFAULTED'
+        self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    def log_payment_notification(self, loan_id, borrower_id, minimum_payment, remaining_balance):
+        trans_type = 'Payment Due'
+        info = f'Loan ID: {loan_id}, Minimum: ${minimum_payment}, Balance: ${remaining_balance}'
+        self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    def log_loan_erased(self, loan_id, borrower_id, amount):
+        trans_type = 'Loan Erased'
+        info = f'Loan ID: {loan_id} - ERASED, Forgave: ${amount}'
+        self._send_transaction_to_listener(trans_type, borrower_id, info)

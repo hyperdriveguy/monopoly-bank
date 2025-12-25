@@ -26,6 +26,10 @@ Below is a list of pages or endpoints available:
 * Auctions directory (NEW)
     * Individual auction page
     * Create, bid on, and complete property auctions
+* Loans directory (NEW)
+    * Individual loan page
+    * Apply for loans and make payments
+    * Banker can manage loan settings and notifications
 * Error pages
     * 404
     * 403
@@ -49,6 +53,17 @@ Players can auction off their properties at any time to other players:
 * **Complete Auction**: Sellers or the banker can complete the auction, transferring the property and funds
 * **Cancel Auction**: Sellers can cancel auctions that have no bids
 * Auction data persists in the SQLite database with full transaction logging
+
+### Loan/Credit System
+Players can qualify for and receive loans to help prevent bankruptcy:
+* **Credit Qualification**: Players qualify based on their credit score (cash + property values)
+* **Interest Rates**: Loans use the interest rate at the time of creation (fixed for loan lifetime)
+* **Flexible Terms**: Banker can set minimum credit requirements, maximum loan amounts, and payment intervals
+* **Payment System**: Players make payments with minimum payment requirements (10% of total owed)
+* **Payment Notifications**: Banker can manually send notifications or schedule automatic timer-based reminders
+* **Loan Management**: Banker can approve loans with credit check bypass, mark loans as defaulted, and track overdue payments
+* **Bankruptcy Buffer**: Loans provide cash flow to help players avoid bankruptcy while they reorganize assets
+* Full loan history and status tracking in transaction logs
 
 ## Useful Websites
 Websites that have been useful in the development of this project:

@@ -1,0 +1,140 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Loan #{{ loan.loan_id }}{% endblock %}
+{% block content %}
+<h2>Loan #{{ loan.loan_id }}</h2>
+
+<div class="card-stylize {% if loan.status.value == 'defaulted' %}defaulted{% elif loan.is_overdue %}overdue{% endif %}">
+    <h3>Loan Details</h3>
+    <p>Borrower: <strong>{{ borrower.name }} ({{ loan.borrower_id }})</strong></p>
+    <p>Status: <strong>{{ loan.status.value.upper() }}</strong></p>
+    {% if loan.is_overdue %}
+    <p style="color: red;"><strong>⚠ PAYMENT OVERDUE</strong></p>
+    {% endif %}
+    
+    <hr>
+    
+    <p>Principal: ${{ loan.principal }}</p>
+    <p>Interest Rate: {{ (loan.interest_rate * 100)|int }}%</p>
+    <p>Total Owed: <strong>${{ loan.total_owed }}</strong></p>
+    <p>Amount Paid: ${{ loan.amount_paid }}</p>
+    <p>Remaining Balance: <strong>${{ loan.remaining_balance }}</strong></p>
+    
+    {% if loan.status.value == 'active' %}
+    <hr>
+    <p>Minimum Payment: <strong>${{ loan.minimum_payment }}</strong></p>
+    <p>Payment Interval: {{ loan.payment_interval }} seconds</p>
+    <p>Next Payment Due: {{ loan.next_payment_due|int }}</p>
+    {% endif %}
+</div>
+
+{% if loan.status.value == 'active' %}
+<div class="card-stylize" style="margin: 1em 0; pointer-events: auto;">
+    <h3>Make Payment</h3>
+    <form action="" method="post" style="padding: 1em;">
+        <div class="label-align">
+            <label for="payment-amount">Payment Amount: $</label>
+            <input type="number" id="payment-amount" name="payment-amount" 
+                   min="1" max="{{ loan.remaining_balance }}" 
+                   value="{{ loan.remaining_balance if loan.minimum_payment == 0 else loan.minimum_payment }}" required>
+        </div>
+        <p>Your current balance: ${{ borrower.cash }}</p>
+        {% if borrower.cash < loan.remaining_balance %}
+        <p style="color: orange;"><strong>Note: Partial payment will be accepted</strong></p>
+        {% endif %}
+        
+        <div style="margin: 1em 0;">
+            {% if loan.minimum_payment > 0 %}
+            <button type="button" onclick="document.getElementById('payment-amount').value='{{ loan.minimum_payment }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer;">
+                Minimum (${{ loan.minimum_payment }})
+            </button>
+            {% endif %}
+            <button type="button" onclick="document.getElementById('payment-amount').value='{{ loan.remaining_balance }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer;">
+                Pay in Full (${{ loan.remaining_balance }})
+            </button>
+        </div>
+        
+        <button type="submit" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; margin: 10px 0;">Make Payment</button>
+    </form>
+</div>
+{% else %}
+<div class="card-stylize" style="pointer-events: auto; padding: 1em;">
+    <p>This loan is {{ loan.status.value }}. Payments can only be made on active loans.</p>
+    
+    {% if loan.status.value == 'defaulted' and (current_user.ident == loan.borrower_id or is_banker) %}
+    <hr>
+    <h3>Resolve Default</h3>
+    <p style="color: #ff9800;"><strong>This loan is in default status.</strong></p>
+    <p>You can settle the outstanding debt to resolve the default.</p>
+    <p><strong>Outstanding Balance: ${{ loan.remaining_balance }}</strong></p>
+    
+    <form action="" method="post" style="margin-top: 1em; pointer-events: auto;">
+        <div class="label-align">
+            <label for="settlement-amount">Settlement Amount: $</label>
+            <input type="number" id="settlement-amount" name="settlement-amount" 
+                   min="1" max="{{ loan.remaining_balance }}" 
+                   value="{{ loan.remaining_balance }}" required>
+        </div>
+        <p>Your current balance: ${{ borrower.cash }}</p>
+        {% if borrower.cash < loan.remaining_balance %}
+        <p style="color: orange;"><strong>Note: You can pay a partial amount if you don't have enough for full settlement</strong></p>
+        {% endif %}
+        <input type="hidden" name="action" value="resolve-default">
+        <button type="submit" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #FF9800; color: white; border: none; border-radius: 4px; margin: 10px 0;">Settle Default</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if is_banker %}
+<div class="card-stylize banker-controls" style="pointer-events: auto; padding: 1em;">
+    <h3>Banker Controls</h3>
+    
+    {% if loan.status.value == 'active' %}
+    <form action="" method="post" style="margin-bottom: 1em;">
+        <input type="hidden" name="action" value="default">
+        <input type="submit" value="Mark as Defaulted" 
+               onclick="return confirm('Are you sure you want to mark this loan as defaulted?');"
+               style="background-color: #d32f2f; color: white;">
+    </form>
+    
+    <form action="" method="post" style="margin-bottom: 1em;">
+        <input type="hidden" name="action" value="notify">
+        <input type="submit" value="Send Payment Notification">
+    </form>
+    
+    <form action="" method="post" style="margin-bottom: 1em;">
+        <h4>Schedule Payment Notification</h4>
+        <div class="label-align">
+            <label for="delay-seconds">Delay (seconds):</label>
+            <input type="number" id="delay-seconds" name="delay-seconds" 
+                   placeholder="Leave empty for default interval" min="1">
+        </div>
+        <input type="hidden" name="action" value="schedule">
+        <input type="submit" value="Schedule Notification">
+    </form>
+    
+    {% if has_scheduled_notification %}
+    <form action="" method="post">
+        <input type="hidden" name="action" value="cancel-notification">
+        <input type="submit" value="Cancel Scheduled Notification">
+    </form>
+    <p style="color: green;">✓ Notification scheduled for this loan</p>
+    {% endif %}
+    {% endif %}
+    
+    <hr>
+    <h4 style="color: #d32f2f;">Debt Forgiveness</h4>
+    <form action="" method="post">
+        <p><strong>Warning: This action is permanent and cannot be undone.</strong></p>
+        <p>This will completely erase the loan and forgive the remaining balance of <strong>${{ loan.remaining_balance }}</strong>.</p>
+        <input type="hidden" name="action" value="erase">
+        <input type="submit" value="Erase Loan Debt" 
+               onclick="return confirm('Are you ABSOLUTELY sure? This will permanently forgive ${{ loan.remaining_balance }} of debt for {{ borrower.name }}. This cannot be undone!');"
+               style="background-color: #8b0000; color: white; padding: 12px 24px; font-weight: bold;">
+    </form>
+</div>
+{% endif %}
+
+<a href="{{ url_for('loans_page') }}" class="button">Back to Loans</a>
+
+{% endblock content %}

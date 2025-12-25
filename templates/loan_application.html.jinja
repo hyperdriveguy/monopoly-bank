@@ -1,0 +1,78 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Apply for Loan{% endblock %}
+{% block content %}
+<h2>Apply for Loan</h2>
+
+{% if has_defaulted_loans %}
+<div class="card-stylize" style="background-color: #ffebee; border: 2px solid #d32f2f; pointer-events: auto; padding: 1em;">
+    <h3>⚠️ Cannot Apply for Loans</h3>
+    <p style="color: #d32f2f;"><strong>You have defaulted loans that must be resolved first.</strong></p>
+    <p>Please contact the banker to negotiate a settlement or arrange payment plan.</p>
+    <a href="{{ url_for('loans_page') }}" style="display: inline-block; padding: 10px 20px; background-color: #d32f2f; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; cursor: pointer;">View Your Loans</a>
+</div>
+{% elif eligible %}
+<div class="card-stylize" style="background-color: #e8f5e9; border: 2px solid green;">
+    <h3>✓ You qualify for credit!</h3>
+    <p>Maximum loan amount: <strong>${{ max_amount }}</strong></p>
+    <p>Current interest rate: <strong>{{ (loan_interest_rate * 100)|int }}%</strong></p>
+    <p>Payment interval: <strong>{{ default_interval }} seconds</strong></p>
+</div>
+{% else %}
+<div class="card-stylize" style="background-color: #ffebee; border: 2px solid red;">
+    <h3>✗ Credit Denied</h3>
+    <p>{{ reason }}</p>
+</div>
+{% endif %}
+
+<form action="" method="post" class="card-stylize">
+    <h3>Loan Application</h3>
+    
+    {% if is_banker %}
+    <div class="label-align">
+        <label for="borrower-id">Borrower ID:</label>
+        <input type="text" id="borrower-id" name="borrower-id" placeholder="Leave empty for self">
+    </div>
+    {% endif %}
+    
+    <div class="label-align">
+        <label for="loan-amount">Loan Amount: $</label>
+        <input type="number" id="loan-amount" name="loan-amount" min="1" 
+               {% if not is_banker and max_amount > 0 %}max="{{ max_amount }}"{% endif %}
+               value="{{ max_amount if max_amount > 0 else '' }}" 
+               placeholder="Enter amount" required autofocus>
+    </div>
+    {% if max_amount > 0 %}
+    <p><small>{% if is_banker %}System maximum: ${{ max_amount }}{% else %}Maximum you can borrow: ${{ max_amount }}{% endif %}</small></p>
+    {% endif %}
+    
+    {% if is_banker %}
+    <div class="label-align">
+        <label for="payment-interval">Payment Interval (seconds):</label>
+        <input type="number" id="payment-interval" name="payment-interval" 
+               value="{{ default_interval }}" min="1">
+    </div>
+    
+    <div class="checkbox">
+        <input type="checkbox" id="bypass-credit-check" name="bypass-credit-check">
+        <label for="bypass-credit-check">Bypass credit checks (Banker override)</label>
+    </div>
+    {% endif %}
+    
+    <input type="submit" value="Apply for Loan" {% if max_amount <= 0 and not is_banker %}disabled{% endif %}>
+</form>
+
+<div class="card-stylize">
+    <h3>How Loans Work</h3>
+    <ul>
+        <li>Loans are based on your current credit score (cash + property values)</li>
+        <li>Interest is calculated at the time of loan creation and fixed for the life of the loan</li>
+        <li>Minimum payments are 10% of total owed</li>
+        <li>Payments are due at intervals set by the banker</li>
+        <li>Loans can help prevent bankruptcy by providing cash buffer</li>
+        <li>Missing payments may result in loan default</li>
+    </ul>
+</div>
+
+<a href="{{ url_for('loans_page') }}" style="display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; cursor: pointer;">Back to Loans</a>
+
+{% endblock content %}

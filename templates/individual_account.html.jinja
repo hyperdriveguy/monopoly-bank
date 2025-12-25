@@ -9,6 +9,31 @@
 <p id="info">{{ info }}</p>
 <p>ID: {{ acc.ident}}</p>
 <p><strong>${{ acc.cash}}</strong></p>
+
+{% if loans %}
+    {% set defaulted_loans = loans|selectattr('status.value', 'equalto', 'defaulted')|list %}
+    {% set overdue_loans = loans|selectattr('is_overdue')|list %}
+    {% if defaulted_loans %}
+    <div style="background-color: #ffebee; border: 2px solid #d32f2f; padding: 1em; margin: 1em 0; border-radius: 4px;">
+        <p style="color: #d32f2f; font-weight: bold;">⚠️ ACCOUNT IN DEFAULT</p>
+        <p>{{ defaulted_loans|length }} defaulted loan(s). Cannot apply for new loans until resolved.</p>
+        <p><strong>Resolution Options:</strong></p>
+        <ul style="margin: 0.5em 0; padding-left: 2em;">
+            <li>Contact the banker to negotiate a settlement</li>
+            <li>Pay off outstanding debt if you have sufficient cash</li>
+            <li>Request a payment plan or restructuring</li>
+        </ul>
+        <a href="{{ url_for('loans_page') }}" style="display: inline-block; padding: 8px 16px; background-color: #d32f2f; color: white; text-decoration: none; border-radius: 4px; margin-top: 1em; cursor: pointer;">View Loans</a>
+    </div>
+    {% elif overdue_loans %}
+    <div style="background-color: #fff3e0; border: 2px solid #ff9800; padding: 1em; margin: 1em 0; border-radius: 4px;">
+        <p style="color: #ff9800; font-weight: bold;">⚠️ OVERDUE PAYMENTS</p>
+        <p>{{ overdue_loans|length }} overdue loan(s). Make payments soon to avoid default.</p>
+        <a href="{{ url_for('loans_page') }}" style="color: #ff9800; text-decoration: underline;">View Loans</a>
+    </div>
+    {% endif %}
+{% endif %}
+
 <div id="account-actions">
     {% if is_banker %}
     <button id="withdraw">Do Withdraw</button>
@@ -77,6 +102,30 @@
     </a>
     {% endfor %}
 </section>
+
+<h3>Loans</h3>
+<section class="account-list">
+    {% if loans %}
+        {% for loan in loans %}
+        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable {% if loan.is_overdue %}overdue{% endif %}">
+            <article>
+                <h3>Loan #{{ loan.loan_id }}</h3>
+                <p>Status: {{ loan.status.value.upper() }}</p>
+                {% if loan.is_overdue %}
+                <p style="color: red;"><strong>⚠ OVERDUE</strong></p>
+                {% endif %}
+                <p>Balance: ${{ loan.remaining_balance }} / ${{ loan.total_owed }}</p>
+                {% if loan.status.value == 'active' %}
+                <p>Minimum Payment: ${{ loan.minimum_payment }}</p>
+                {% endif %}
+            </article>
+        </a>
+        {% endfor %}
+    {% else %}
+        <p>No loans. <a href="{{ url_for('loan_application') }}">Apply for a loan</a></p>
+    {% endif %}
+</section>
+
 <section id="audit_log">
     <details>
         <summary>

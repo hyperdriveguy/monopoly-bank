@@ -13,6 +13,8 @@ from property_manger import PropertyManager
 
 from auction_store import AuctionManager
 
+from loan_store import LoanManager
+
 # TODO: Remove this
 TEMP_PASSWORD = 'temp'
 
@@ -101,6 +103,8 @@ if __name__ == '__main__':
 
     managed_auctions = AuctionManager(managed_accs.tlog_connection)
 
+    managed_loans = LoanManager(managed_accs.tlog_connection, managed_accs)
+
     # Global mortgage interest rate (as decimal, e.g., 0.10 = 10%)
     mortgage_interest_rate = {'value': 0.10}
 
@@ -142,11 +146,34 @@ if __name__ == '__main__':
         if not current_user.is_anonymous:
             flash(current_user)
             # Banker can update mortgage interest rate
-            if current_user.banker and request.method == 'POST' and 'mortgage-interest' in request.form:
-                new_rate = float(request.form['mortgage-interest']) / 100.0
-                mortgage_interest_rate['value'] = new_rate
-                flash(f'Mortgage interest rate updated to {int(new_rate * 100)}%')
-        return render_generic('home.html.jinja', mortgage_interest_rate=mortgage_interest_rate['value'])
+            if current_user.banker and request.method == 'POST':
+                if 'mortgage-interest' in request.form:
+                    new_rate = float(request.form['mortgage-interest']) / 100.0
+                    mortgage_interest_rate['value'] = new_rate
+                    flash(f'Mortgage interest rate updated to {int(new_rate * 100)}%')
+                # Banker can update loan interest rate
+                elif 'loan-interest' in request.form:
+                    new_rate = float(request.form['loan-interest']) / 100.0
+                    managed_loans.loan_interest_rate = new_rate
+                    flash(f'Loan interest rate updated to {int(new_rate * 100)}%')
+                # Banker can update minimum credit score
+                elif 'min-credit-score' in request.form:
+                    managed_loans.min_credit_score = int(request.form['min-credit-score'])
+                    flash(f'Minimum credit score updated to ${managed_loans.min_credit_score}')
+                # Banker can update maximum loan amount
+                elif 'max-loan-amount' in request.form:
+                    managed_loans.max_loan_amount = int(request.form['max-loan-amount'])
+                    flash(f'Maximum loan amount updated to ${managed_loans.max_loan_amount}')
+                # Banker can update default payment interval
+                elif 'payment-interval' in request.form:
+                    managed_loans.default_payment_interval = int(request.form['payment-interval'])
+                    flash(f'Payment interval updated to {managed_loans.default_payment_interval} seconds')
+        return render_generic('home.html.jinja', 
+                            mortgage_interest_rate=mortgage_interest_rate['value'],
+                            loan_interest_rate=managed_loans.loan_interest_rate,
+                            min_credit_score=managed_loans.min_credit_score,
+                            max_loan_amount=managed_loans.max_loan_amount,
+                            payment_interval=managed_loans.default_payment_interval)
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -251,7 +278,10 @@ if __name__ == '__main__':
             amount = target_account.deposit(int(request.form['deposit-amount']))
             flash(f'Deposited ${amount} into account.')
 
-        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log)
+        # Get loans for this account
+        account_loans = managed_loans.get_loans_by_borrower(ident)
+
+        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log, loans=account_loans)
 
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
@@ -411,6 +441,224 @@ if __name__ == '__main__':
         return render_generic('sidebar.html.jinja')
 
 
+    @app.route('/loans/')
+    def loans_page():
+        """
+        Display all loans.
+        Bankers see all loans, players see only their own.
+        """
+        if current_user.is_anonymous:
+            abort(403)
+        
+        if current_user.banker:
+            # Banker sees all loans
+            all_loans = managed_loans.get_all_loans()
+            overdue_loans = managed_loans.get_overdue_loans()
+        else:
+            # Player sees only their own loans
+            all_loans = managed_loans.get_loans_by_borrower(current_user.ident)
+            overdue_loans = [loan for loan in all_loans if loan.is_overdue]
+        
+        return render_generic('loans.html.jinja', 
+                            loans=all_loans, 
+                            overdue_loans=overdue_loans,
+                            loan_interest_rate=managed_loans.loan_interest_rate)
+
+
+    @app.route('/loans/apply', methods=['GET', 'POST'])
+    def loan_application():
+        """
+        Handle loan applications.
+        """
+        if current_user.is_anonymous:
+            abort(403)
+        
+        # Check if player has defaulted loans (unless they're a banker)
+        if not current_user.banker and managed_loans.has_defaulted_loans(current_user.ident):
+            flash('Cannot apply for loans while you have defaulted loans. Please resolve them first.')
+            return redirect(url_for('loans_page'))
+        
+        if request.method == 'POST':
+            try:
+                requested_amount = int(request.form['loan-amount'])
+                payment_interval = None
+                
+                # Banker can override payment interval
+                if current_user.banker and 'payment-interval' in request.form:
+                    payment_interval = int(request.form['payment-interval'])
+                
+                # Get borrower ID (banker can apply for others)
+                borrower_id = current_user.ident
+                approved_by_banker = False
+                
+                if current_user.banker:
+                    # Check if borrower-id is provided and not empty
+                    if 'borrower-id' in request.form and request.form['borrower-id'].strip():
+                        borrower_id = request.form['borrower-id'].strip()
+                    
+                    # Check if bypass credit check is selected
+                    if 'bypass-credit-check' in request.form and request.form.get('bypass-credit-check'):
+                        approved_by_banker = True
+                
+                # Create loan
+                success, result = managed_loans.create_loan(
+                    borrower_id, 
+                    requested_amount, 
+                    payment_interval,
+                    approved_by_banker
+                )
+                
+                if success:
+                    flash(f'Loan approved! Loan ID: {result}')
+                    return redirect(url_for('individual_loan_page', loan_id=result))
+                else:
+                    flash(f'Loan denied: {result}')
+            except ValueError:
+                flash('Invalid loan amount.')
+        
+        # Calculate eligibility for GET request
+        eligible = False
+        reason = ""
+        max_amount = 0
+        has_defaulted_loans = False
+        
+        if not current_user.is_anonymous:
+            has_defaulted_loans = managed_loans.has_defaulted_loans(current_user.ident)
+            
+            if current_user.banker:
+                # Bankers can borrow up to the system maximum (they can bypass credit checks)
+                max_amount = managed_loans.max_loan_amount
+                eligible = True
+                reason = "Banker - can bypass credit checks"
+            elif not has_defaulted_loans:
+                # Regular players are subject to credit checks
+                eligible, reason, max_amount = managed_loans.check_loan_eligibility(
+                    current_user.ident, 
+                    managed_loans.max_loan_amount
+                )
+        
+        return render_generic('loan_application.html.jinja',
+                            eligible=eligible,
+                            reason=reason,
+                            max_amount=max_amount,
+                            has_defaulted_loans=has_defaulted_loans,
+                            loan_interest_rate=managed_loans.loan_interest_rate,
+                            default_interval=managed_loans.default_payment_interval)
+
+
+    @app.route('/loans/<loan_id>', methods=['GET', 'POST'])
+    def individual_loan_page(loan_id):
+        """
+        Display and handle actions for a specific loan.
+        """
+        if current_user.is_anonymous:
+            abort(403)
+        
+        loan = managed_loans.get_loan(loan_id)
+        if not loan:
+            flash('Loan not found.')
+            return redirect(url_for('loans_page'))
+        
+        # Check authorization
+        if not current_user.banker and loan.borrower_id != current_user.ident:
+            abort(403)
+        
+        borrower = managed_accs.query(loan.borrower_id)
+        
+        if request.method == 'POST':
+            # Make payment
+            if 'payment-amount' in request.form:
+                if current_user.banker or loan.borrower_id == current_user.ident:
+                    try:
+                        payment_amount = int(request.form['payment-amount'])
+                        success, message = managed_loans.make_payment(loan_id, payment_amount)
+                        flash(message)
+                        
+                        # Reload loan to get updated data
+                        loan = managed_loans.get_loan(loan_id)
+                    except ValueError:
+                        flash('Invalid payment amount.')
+                else:
+                    abort(403)
+            
+            # Resolve defaulted loan (borrower can settle)
+            elif 'action' in request.form and request.form['action'] == 'resolve-default':
+                if loan.borrower_id != current_user.ident and not current_user.banker:
+                    abort(403)
+                
+                if loan.status.value != 'defaulted':
+                    flash('This loan is not in default status.')
+                else:
+                    try:
+                        settlement_amount = int(request.form.get('settlement-amount', loan.remaining_balance))
+                        
+                        # Check if player has sufficient funds
+                        if borrower.cash < settlement_amount:
+                            flash(f'Insufficient funds. You have ${borrower.cash}, need ${settlement_amount}.')
+                        else:
+                            # Process settlement payment
+                            success, message = managed_loans.make_payment(loan_id, settlement_amount)
+                            flash(message)
+                            
+                            # If loan is paid off, forgive the default and notify
+                            updated_loan = managed_loans.get_loan(loan_id)
+                            if updated_loan.status.value == 'paid_off':
+                                forgive_success, forgive_message = managed_loans.forgive_default(loan_id)
+                                if forgive_success:
+                                    flash(forgive_message)
+                                flash('🎉 Congratulations! Your loan has been fully paid off and your default has been resolved.')
+                            
+                            loan = managed_loans.get_loan(loan_id)
+                    except ValueError:
+                        flash('Invalid settlement amount.')
+            
+            # Default loan (banker only)
+            elif 'action' in request.form and request.form['action'] == 'default':
+                if not current_user.banker:
+                    abort(403)
+                success, message = managed_loans.default_loan(loan_id)
+                flash(message)
+                loan = managed_loans.get_loan(loan_id)
+            
+            # Send payment notification (banker only)
+            elif 'action' in request.form and request.form['action'] == 'notify':
+                if not current_user.banker:
+                    abort(403)
+                success, message = managed_loans.send_payment_notification(loan_id)
+                flash(message)
+            
+            # Schedule payment notification (banker only)
+            elif 'action' in request.form and request.form['action'] == 'schedule':
+                if not current_user.banker:
+                    abort(403)
+                delay = None
+                if 'delay-seconds' in request.form and request.form['delay-seconds']:
+                    delay = int(request.form['delay-seconds'])
+                success, message = managed_loans.schedule_payment_notification(loan_id, delay)
+                flash(message)
+            
+            # Cancel scheduled notification (banker only)
+            elif 'action' in request.form and request.form['action'] == 'cancel-notification':
+                if not current_user.banker:
+                    abort(403)
+                success, message = managed_loans.cancel_payment_notification(loan_id)
+                flash(message)
+            
+            # Erase loan debt (banker only - complete forgiveness)
+            elif 'action' in request.form and request.form['action'] == 'erase':
+                if not current_user.banker:
+                    abort(403)
+                success, message = managed_loans.erase_loan(loan_id)
+                flash(message)
+                if success:
+                    return redirect(url_for('loans_page'))
+        
+        return render_generic('individual_loan.html.jinja', 
+                            loan=loan, 
+                            borrower=borrower,
+                            has_scheduled_notification=(loan_id in managed_loans.payment_timers))
+
+
     @app.route('/auctions/')
     def auctions_page():
         """
@@ -536,6 +784,8 @@ if __name__ == '__main__':
         for m in managed_accs.cleanup():
             print(m)
         for m in managed_auctions.cleanup():
+            print(m)
+        for m in managed_loans.cleanup():
             print(m)
 
 

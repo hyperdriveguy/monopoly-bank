@@ -262,6 +262,55 @@ h3 input {
   border-bottom: 1px solid #ddd;
 }
 
+/* Loan-specific styles */
+.overdue {
+  border: 2px solid red !important;
+  background-color: #ffebee;
+}
+
+.defaulted {
+  border: 2px solid #333 !important;
+  background-color: #e0e0e0;
+}
+
+.overdue-section {
+  margin-bottom: 2em;
+  padding: 1em;
+  border: 2px solid red;
+  border-radius: 8px;
+  background-color: #ffebee;
+}
+
+.banker-controls {
+  background-color: #e3f2fd;
+  border: 2px solid #1976d2;
+}
+
+.checkbox, .radio {
+  margin: 0.5em 0;
+  text-align: left;
+}
+
+.checkbox label, .radio label {
+  margin-left: 0.5em;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.5em 1em;
+  margin: 0.5em;
+  background-color: #1976d2;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #1565c0;
+}
+
 
 @media screen and (min-width: 1506px) {
     .account-list {

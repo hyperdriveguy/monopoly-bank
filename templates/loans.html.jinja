@@ -1,0 +1,83 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Loans{% endblock %}
+{% block content %}
+<h2>Loans</h2>
+
+{% if is_banker %}
+<p>Loan Interest Rate: {{ (loan_interest_rate * 100)|int }}%</p>
+{% endif %}
+
+<a href="{{ url_for('loan_application') }}" class="button">Apply for Loan</a>
+
+{% if overdue_loans %}
+<section class="overdue-section">
+    <h3 style="color: red;">Overdue Loans ({{ overdue_loans|length }})</h3>
+    <div class="account-list">
+        {% for loan in overdue_loans %}
+        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable" style="border: 2px solid red;">
+            <article>
+                <h3>Loan #{{ loan.loan_id }}</h3>
+                {% if is_banker %}
+                <p>Borrower: {{ loan.borrower_id }}</p>
+                {% endif %}
+                <p>Principal: ${{ loan.principal }}</p>
+                <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                <p style="color: red;"><strong>OVERDUE</strong></p>
+                <p>Balance: ${{ loan.remaining_balance }}</p>
+                <p>Minimum Payment: ${{ loan.minimum_payment }}</p>
+            </article>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<h3>Active Loans</h3>
+<section class="account-list">
+    {% set active_loans = loans|selectattr('status.value', 'equalto', 'active')|list %}
+    {% if active_loans %}
+        {% for loan in active_loans %}
+        {% if not loan.is_overdue %}
+        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable">
+            <article>
+                <h3>Loan #{{ loan.loan_id }}</h3>
+                {% if is_banker %}
+                <p>Borrower: {{ loan.borrower_id }}</p>
+                {% endif %}
+                <p>Principal: ${{ loan.principal }}</p>
+                <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                <p>Total Owed: ${{ loan.total_owed }}</p>
+                <p>Paid: ${{ loan.amount_paid }}</p>
+                <p>Balance: ${{ loan.remaining_balance }}</p>
+            </article>
+        </a>
+        {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No active loans.</p>
+    {% endif %}
+</section>
+
+<h3>Completed & Defaulted Loans</h3>
+<section class="account-list">
+    {% set inactive_loans = loans|rejectattr('status.value', 'equalto', 'active')|list %}
+    {% if inactive_loans %}
+        {% for loan in inactive_loans %}
+        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable">
+            <article>
+                <h3>Loan #{{ loan.loan_id }}</h3>
+                {% if is_banker %}
+                <p>Borrower: {{ loan.borrower_id }}</p>
+                {% endif %}
+                <p>Principal: ${{ loan.principal }}</p>
+                <p>Status: <strong>{{ loan.status.value.upper() }}</strong></p>
+                <p>Paid: ${{ loan.amount_paid }} / ${{ loan.total_owed }}</p>
+            </article>
+        </a>
+        {% endfor %}
+    {% else %}
+        <p>No completed or defaulted loans.</p>
+    {% endif %}
+</section>
+
+{% endblock content %}

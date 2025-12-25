@@ -6,17 +6,49 @@
 {% if is_banker %}
 <section>
     <h3>Banker Settings</h3>
+    
+    <h4>Mortgage Settings</h4>
     <form method="post">
         <label for="mortgage-interest">Mortgage Interest Rate (%):</label>
         <input type="number" id="mortgage-interest" name="mortgage-interest" min="0" max="100" step="1" value="{{ (mortgage_interest_rate * 100)|int }}" style="width: 80px;" required>
         <button type="submit">Update Rate</button>
     </form>
     <p>Current rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
+    
+    <h4>Loan Settings</h4>
+    <form method="post">
+        <label for="loan-interest">Loan Interest Rate (%):</label>
+        <input type="number" id="loan-interest" name="loan-interest" min="0" max="100" step="1" value="{{ (loan_interest_rate * 100)|int }}" style="width: 80px;" required>
+        <button type="submit">Update Rate</button>
+    </form>
+    <p>Current loan rate: {{ (loan_interest_rate * 100)|int }}%</p>
+    
+    <form method="post">
+        <label for="min-credit-score">Minimum Credit Score ($):</label>
+        <input type="number" id="min-credit-score" name="min-credit-score" min="0" step="1" value="{{ min_credit_score }}" style="width: 100px;" required>
+        <button type="submit">Update</button>
+    </form>
+    <p>Current minimum: ${{ min_credit_score }}</p>
+    
+    <form method="post">
+        <label for="max-loan-amount">Maximum Loan Amount ($):</label>
+        <input type="number" id="max-loan-amount" name="max-loan-amount" min="1" step="1" value="{{ max_loan_amount }}" style="width: 100px;" required>
+        <button type="submit">Update</button>
+    </form>
+    <p>Current maximum: ${{ max_loan_amount }}</p>
+    
+    <form method="post">
+        <label for="payment-interval">Payment Interval (seconds):</label>
+        <input type="number" id="payment-interval" name="payment-interval" min="1" step="1" value="{{ payment_interval }}" style="width: 100px;" required>
+        <button type="submit">Update</button>
+    </form>
+    <p>Current interval: {{ payment_interval }} seconds</p>
 </section>
 {% elif logged_in %}
 <section>
     <h3>Game Settings</h3>
     <p>Mortgage Interest Rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
+    <p>Loan Interest Rate: {{ (loan_interest_rate * 100)|int }}%</p>
 </section>
 {% endif %}
 
