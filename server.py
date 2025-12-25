@@ -11,6 +11,8 @@ from account_store import AccountManager
 
 from property_manger import PropertyManager
 
+from auction_store import AuctionManager
+
 # TODO: Remove this
 TEMP_PASSWORD = 'temp'
 
@@ -96,6 +98,8 @@ if __name__ == '__main__':
     managed_props = PropertyManager('property_set.json')
 
     managed_accs = AccountManager(managed_props)
+
+    managed_auctions = AuctionManager(managed_accs.tlog_connection)
 
     # Global mortgage interest rate (as decimal, e.g., 0.10 = 10%)
     mortgage_interest_rate = {'value': 0.10}
@@ -303,6 +307,23 @@ if __name__ == '__main__':
                 # Use global interest rate set by banker
                 result = managed_accs.unmortgage_property(prop.owner, prop, mortgage_interest_rate['value'])
                 flash(result)
+            # Create auction (property owner only)
+            elif 'action' in request.form and request.form['action'] == 'create-auction':
+                if current_user.is_anonymous:
+                    abort(403)
+                if prop.owner != current_user.ident:
+                    abort(403)
+                
+                try:
+                    starting_bid = int(request.form.get('starting-bid', prop.costs['property'] // 2))
+                    success, result = managed_auctions.create_auction(prop.name, current_user.ident, starting_bid)
+                    if success:
+                        flash(f'Auction created for {prop.name} with starting bid ${starting_bid}.')
+                        return redirect(url_for('individual_auction_page', auction_id=result))
+                    else:
+                        flash(result)
+                except ValueError:
+                    flash('Invalid starting bid amount.')
             # Banker operations
             elif current_user.is_anonymous or not current_user.banker:
                 abort(403)
@@ -385,10 +406,102 @@ if __name__ == '__main__':
 
     # TODO: Finish pages
     @app.route('/investments')
-    @app.route('/auctions')
     @app.route('/help')
     def placeholder_page():
         return render_generic('sidebar.html.jinja')
+
+
+    @app.route('/auctions/')
+    def auctions_page():
+        """
+        Display all active auctions.
+        """
+        active_auctions = managed_auctions.get_active_auctions()
+        # Enrich auction data with property information
+        auction_data = []
+        for auction in active_auctions:
+            prop = managed_props.properties.get(auction.property_name)
+            if prop:
+                auction_data.append({
+                    'auction': auction,
+                    'property': prop
+                })
+        
+        return render_generic('auctions.html.jinja', auctions=auction_data)
+
+
+    @app.route('/auctions/<auction_id>', methods=['GET', 'POST'])
+    def individual_auction_page(auction_id):
+        """
+        Display and handle actions for a specific auction.
+        """
+        auction = managed_auctions.get_auction(auction_id)
+        if not auction:
+            flash('Auction not found.')
+            return redirect(url_for('auctions_page'))
+        
+        prop = managed_props.properties.get(auction.property_name)
+        if not prop:
+            flash('Property not found.')
+            return redirect(url_for('auctions_page'))
+        
+        if request.method == 'POST':
+            # Place a bid
+            if 'bid-amount' in request.form:
+                if current_user.is_anonymous:
+                    abort(403)
+                
+                try:
+                    bid_amount = int(request.form['bid-amount'])
+                    success, message = managed_auctions.place_bid(auction_id, current_user.ident, bid_amount)
+                    flash(message)
+                except ValueError:
+                    flash('Invalid bid amount.')
+            
+            # Complete auction (seller or banker only)
+            elif 'action' in request.form and request.form['action'] == 'complete':
+                if current_user.is_anonymous:
+                    abort(403)
+                if auction.seller_id != current_user.ident and not current_user.banker:
+                    abort(403)
+                
+                winner_id, winning_bid = managed_auctions.complete_auction(auction_id)
+                
+                if winner_id:
+                    # Transfer property from seller to winner
+                    # Remove property from seller
+                    seller = managed_accs.query(auction.seller_id)
+                    if seller != 'Account does not exist.':
+                        seller.remove_property(prop)
+                    
+                    # Transfer money from winner to seller
+                    result = managed_accs.transfer(winner_id, auction.seller_id, winning_bid)
+                    flash(result)
+                    
+                    # Give property to winner
+                    winner = managed_accs.query(winner_id)
+                    if winner != 'Account does not exist.':
+                        winner.add_property(prop)
+                    
+                    flash(f'Auction completed! {prop.name} sold to {winner_id} for ${winning_bid}.')
+                else:
+                    flash('Auction completed with no bids.')
+                
+                return redirect(url_for('auctions_page'))
+            
+            # Cancel auction (seller only, no bids)
+            elif 'action' in request.form and request.form['action'] == 'cancel':
+                if current_user.is_anonymous:
+                    abort(403)
+                if auction.seller_id != current_user.ident and not current_user.banker:
+                    abort(403)
+                
+                success, message = managed_auctions.cancel_auction(auction_id, current_user.ident)
+                flash(message)
+                if success:
+                    return redirect(url_for('auctions_page'))
+        
+        return render_generic('individual_auction.html.jinja', auction=auction, prop=prop)
 
 
     # Error handlers
@@ -421,6 +534,8 @@ if __name__ == '__main__':
     # Clean up the application and close the TLog
     finally:
         for m in managed_accs.cleanup():
+            print(m)
+        for m in managed_auctions.cleanup():
             print(m)
 
 

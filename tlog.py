@@ -40,6 +40,28 @@ class TransactionLog:
                 is_banker BOOL)
             """
         )
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS Auctions(
+                auction_id TEXT PRIMARY KEY,
+                property_name TEXT,
+                seller_id TEXT,
+                starting_bid INTEGER,
+                current_bid INTEGER,
+                current_bidder TEXT,
+                created_at REAL,
+                active BOOL)
+            """
+        )
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS AuctionBids(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                auction_id TEXT,
+                bidder_id TEXT,
+                amount INTEGER,
+                timestamp REAL,
+                FOREIGN KEY (auction_id) REFERENCES Auctions(auction_id))
+            """
+        )
         while True:
             try:
                 next_command = self.exec_queue.get()
@@ -200,3 +222,67 @@ class TransactionLog:
         yield 'Signaled db listener close'
         self.listener_thread.join()
         yield 'Stopped TLog'
+
+    # Auction methods
+    def create_auction(self, auction_id, property_name, seller_id, starting_bid, created_at):
+        self.exec_queue.put((
+            True,
+            "INSERT INTO Auctions VALUES (?, ?, ?, ?, ?, NULL, ?, 1)",
+            (auction_id, property_name, seller_id, starting_bid, starting_bid, created_at)
+        ))
+        trans_type = 'Auction Created'
+        info = f'Property: {property_name}, Starting bid: ${starting_bid}'
+        self._send_transaction_to_listener(trans_type, seller_id, info)
+
+    def get_all_auctions(self):
+        self.exec_queue.put((
+            False,
+            "SELECT * FROM Auctions",
+            None
+        ))
+        return self.receive_data.get()
+
+    def get_auction_bids(self, auction_id):
+        self.exec_queue.put((
+            False,
+            "SELECT bidder_id, amount, timestamp FROM AuctionBids WHERE auction_id=? ORDER BY timestamp",
+            (auction_id,)
+        ))
+        return self.receive_data.get()
+
+    def place_bid(self, auction_id, bidder_id, amount, timestamp):
+        # Insert bid into history
+        self.exec_queue.put((
+            True,
+            "INSERT INTO AuctionBids (auction_id, bidder_id, amount, timestamp) VALUES (?, ?, ?, ?)",
+            (auction_id, bidder_id, amount, timestamp)
+        ))
+        # Update current bid on auction
+        self.exec_queue.put((
+            True,
+            "UPDATE Auctions SET current_bid=?, current_bidder=? WHERE auction_id=?",
+            (amount, bidder_id, auction_id)
+        ))
+        trans_type = 'Bid Placed'
+        info = f'Auction: {auction_id}, Amount: ${amount}'
+        self._send_transaction_to_listener(trans_type, bidder_id, info)
+
+    def complete_auction(self, auction_id):
+        self.exec_queue.put((
+            True,
+            "UPDATE Auctions SET active=0 WHERE auction_id=?",
+            (auction_id,)
+        ))
+        trans_type = 'Auction Completed'
+        info = f'Auction: {auction_id}'
+        self._send_transaction_to_listener(trans_type, None, info)
+
+    def cancel_auction(self, auction_id, seller_id):
+        self.exec_queue.put((
+            True,
+            "UPDATE Auctions SET active=0 WHERE auction_id=?",
+            (auction_id,)
+        ))
+        trans_type = 'Auction Cancelled'
+        info = f'Auction: {auction_id}'
+        self._send_transaction_to_listener(trans_type, seller_id, info)

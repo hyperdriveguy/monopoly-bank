@@ -23,6 +23,9 @@ Below is a list of pages or endpoints available:
 * Properties directory
     * Individual property
     * Individual property API endpoint
+* Auctions directory (NEW)
+    * Individual auction page
+    * Create, bid on, and complete property auctions
 * Error pages
     * 404
     * 403
@@ -35,6 +38,17 @@ Both of these libraries must be in your Python environment to successfully run.
 The development environment targets a Linux system.
 There have been little attempts to test on other operating systems;
 some breakage has been reported on Windows.
+
+## Features
+
+### Property Auctions
+Players can auction off their properties at any time to other players:
+* **Create Auction**: Property owners can create auctions from their property page with a custom starting bid
+* **Place Bids**: Any logged-in player (except the seller) can place bids on active auctions
+* **Mortgaged Properties**: Even mortgaged properties can be auctioned (buyer receives mortgaged property)
+* **Complete Auction**: Sellers or the banker can complete the auction, transferring the property and funds
+* **Cancel Auction**: Sellers can cancel auctions that have no bids
+* Auction data persists in the SQLite database with full transaction logging
 
 ## Useful Websites
 Websites that have been useful in the development of this project:

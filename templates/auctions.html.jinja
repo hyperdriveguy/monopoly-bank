@@ -1,0 +1,39 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Auctions{% endblock %}
+{% block content %}
+<h2>Property Auctions</h2>
+
+{% if auctions %}
+<section class="account-list">
+    {% for item in auctions %}
+    {% set auction = item.auction %}
+    {% set prop = item.property %}
+    <a href="/auctions/{{ auction.auction_id }}" class="card-stylize clickable">
+        <article>
+            <h3 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>
+                {{ prop.name }}
+                {% if prop.mortgaged %}🏦{% endif %}
+            </h3>
+            <p><strong>Seller:</strong> {{ auction.seller_id }}</p>
+            <p><strong>Current Bid:</strong> ${{ auction.current_bid }}</p>
+            {% if auction.current_bidder %}
+            <p><strong>Current Bidder:</strong> {{ auction.current_bidder }}</p>
+            {% else %}
+            <p><em>No bids yet</em></p>
+            {% endif %}
+            <p><strong>Started:</strong> {{ auction.get_time_elapsed() }}</p>
+            {% if prop.mortgaged %}
+            <p class="warning-red">⚠ Property is MORTGAGED</p>
+            {% endif %}
+        </article>
+    </a>
+    {% endfor %}
+</section>
+{% else %}
+<section>
+    <p>No active auctions at this time.</p>
+    <p>Property owners can create auctions from their property pages.</p>
+</section>
+{% endif %}
+
+{% endblock content %}

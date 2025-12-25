@@ -247,6 +247,21 @@ h3 input {
   background-color: #f2f2f2;
 }
 
+#bid_history {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 0.5em;
+  background-color: #f9f9f9;
+  margin-top: 0.5em;
+}
+
+#bid_history p {
+  margin: 0.25em 0;
+  padding: 0.25em;
+  border-bottom: 1px solid #ddd;
+}
+
 
 @media screen and (min-width: 1506px) {
     .account-list {

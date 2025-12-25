@@ -1,0 +1,90 @@
+{% extends "sidebar.html.jinja" %}
+{% block title %}Auction: {{ prop.name }}{% endblock %}
+{% block content %}
+<h2 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>
+    Auction: {{ prop.name }}
+</h2>
+
+<section class="{% if prop.mortgaged %}mortgaged{% endif %}">
+    <h3>Property Details</h3>
+    <p>Owner: {{ prop.owner if prop.owner else 'Bank' }}</p>
+    <p>Property Value: ${{ prop.costs['property'] }}</p>
+    {% if prop.mortgaged %}
+    <p class="warning-red">⚠ Property is MORTGAGED (no rent collected until unmortgaged)</p>
+    <p>Unmortgage Cost: ${{ (prop.mortgage_value * 1.10)|int }}</p>
+    {% else %}
+    <p>Current Rent: ${{ prop.rent }}</p>
+    {% endif %}
+    
+    {% if not prop.owner %}
+        <p>Property cost: ${{ prop.costs['property'] }}</p>
+    {% else %}
+        {% for item, cost in prop.costs.items() if item != 'property' %}
+            <p>{{ item.title() }}: ${{ cost }}</p>
+        {% endfor %}
+    {% endif %}
+</section>
+
+<section>
+    <h3>Auction Information</h3>
+    <p><strong>Seller:</strong> {{ auction.seller_id }}</p>
+    <p><strong>Starting Bid:</strong> ${{ auction.starting_bid }}</p>
+    <p class="rent-cost"><strong>Current Bid: ${{ auction.current_bid }}</strong></p>
+    {% if auction.current_bidder %}
+    <p><strong>Leading Bidder:</strong> {{ auction.current_bidder }}</p>
+    {% else %}
+    <p><em>No bids yet - be the first!</em></p>
+    {% endif %}
+    <p><strong>Time Since Start:</strong> {{ auction.get_time_elapsed() }}</p>
+    
+    {% if auction.bid_history %}
+    <h4>Bid History</h4>
+    <div id="bid_history">
+        {% for bidder, amount, timestamp in auction.bid_history|reverse %}
+        <p>{{ bidder }} - ${{ amount }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
+{% if logged_in and auction.active and auction.seller_id != user_id %}
+<section>
+    <h3>Place Your Bid</h3>
+    <form method="post" class="wide-forms">
+        <div class="label-align">
+            <label for="bid-amount">Bid Amount:</label>
+            <input type="number" id="bid-amount" name="bid-amount" min="{{ auction.current_bid + 1 }}" value="{{ auction.current_bid + 50 }}" required>
+        </div>
+        <p><em>Minimum bid: ${{ auction.current_bid + 1 }}</em></p>
+        <button type="submit">Place Bid</button>
+    </form>
+</section>
+{% endif %}
+
+{% if logged_in and auction.active and (auction.seller_id == user_id or is_banker) %}
+<section>
+    <h3>Auction Controls</h3>
+    
+    {% if auction.current_bidder %}
+    <form method="post">
+        <input type="hidden" name="action" value="complete">
+        <p>Complete the auction and sell to <strong>{{ auction.current_bidder }}</strong> for <strong>${{ auction.current_bid }}</strong>.</p>
+        <button type="submit">Complete Auction</button>
+    </form>
+    {% else %}
+    <form method="post">
+        <input type="hidden" name="action" value="cancel">
+        <p>No bids have been placed. You can cancel this auction.</p>
+        <button type="submit">Cancel Auction</button>
+    </form>
+    {% endif %}
+</section>
+{% endif %}
+
+{% if not auction.active %}
+<section>
+    <p class="warning-red"><strong>This auction has ended.</strong></p>
+</section>
+{% endif %}
+
+{% endblock content %}
