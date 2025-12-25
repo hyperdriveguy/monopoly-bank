@@ -268,13 +268,22 @@ if __name__ == '__main__':
     def individual_property_page(prop_name):
         prop = managed_props.properties[prop_name]
         
-        # Handle POST requests (banker operations)
+        # Handle POST requests
         if request.method == 'POST':
-            if current_user.is_anonymous or not current_user.banker:
+            # Pay rent (any logged-in player)
+            if 'action' in request.form and request.form['action'] == 'pay-rent':
+                if current_user.is_anonymous:
+                    abort(403)
+                if not prop.owner or prop.owner == current_user.ident:
+                    flash('Cannot pay rent to yourself or the bank.')
+                else:
+                    result = managed_accs.transfer(current_user.ident, prop.owner, prop.rent)
+                    flash(result)
+            # Banker operations
+            elif current_user.is_anonymous or not current_user.banker:
                 abort(403)
-            
             # Sell property to player
-            if 'buyer-id' in request.form:
+            elif 'buyer-id' in request.form:
                 buyer_id = request.form['buyer-id']
                 result = managed_accs.sell_property(buyer_id, prop)
                 flash(result)

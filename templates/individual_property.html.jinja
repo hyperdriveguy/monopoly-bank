@@ -7,7 +7,7 @@
     {% if not prop.owner %}
         <p>Property cost: ${{ prop.costs['property'] }}</p>
     {% else %}
-        <p>Rent cost: ${{ prop.rent }}</p>
+        <p class="rent-cost"><strong>Rent cost: ${{ prop.rent }}</strong></p>
         {% for item, cost in prop.costs.items() if item != 'property' %}
             <p>{{ item.title() }}: ${{ cost }}</p>
         {% endfor %}
@@ -17,6 +17,17 @@
         <p>{{ tier }}: ${{ rate }}</p>
     {% endfor %}
 </section>
+
+{% if logged_in and prop.owner and prop.owner != user_id %}
+<section>
+    <h3>Pay Rent</h3>
+    <form method="post">
+        <input type="hidden" name="action" value="pay-rent">
+        <p>Pay <strong>${{ prop.rent }}</strong> rent to {{ prop.owner }}</p>
+        <button type="submit">Pay Rent</button>
+    </form>
+</section>
+{% endif %}
 
 {% if is_banker %}
 <section>

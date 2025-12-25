@@ -135,6 +135,11 @@ form.card-stylize {
     background-color: darkred;
 }
 
+.rent-cost {
+    font-size: 1.2em;
+    color: #d32f2f;
+}
+
 input {
     margin: 0.5em;
 }
