@@ -3,6 +3,16 @@
 {% block content %}
 <h2>Home</h2>
 
+<section>
+    <h3>Game Status</h3>
+    <p><strong>Current Turn: {{ current_turn }}</strong></p>
+    {% if is_banker %}
+    <form method="post" style="display: inline;">
+        <button type="submit" name="increment-turn" value="true" style="padding: 8px 16px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Increment Turn</button>
+    </form>
+    {% endif %}
+</section>
+
 {% if is_banker %}
 <section>
     <h3>Banker Settings</h3>
@@ -38,17 +48,11 @@
     <p>Current maximum: ${{ max_loan_amount }}</p>
     
     <form method="post">
-        <label for="payment-interval">Payment Interval (seconds):</label>
-        <input type="number" id="payment-interval" name="payment-interval" min="1" step="1" value="{{ payment_interval }}" style="width: 100px;" required>
+        <label for="compounding-interval">Compound Interest Every (turns):</label>
+        <input type="number" id="compounding-interval" name="compounding-interval" min="1" step="1" value="{{ compounding_interval_turns }}" style="width: 100px;" required>
         <button type="submit">Update</button>
     </form>
-    <p>Current interval: {{ payment_interval }} seconds</p>
-</section>
-{% elif logged_in %}
-<section>
-    <h3>Game Settings</h3>
-    <p>Mortgage Interest Rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
-    <p>Loan Interest Rate: {{ (loan_interest_rate * 100)|int }}%</p>
+    <p>Interest compounds every {{ compounding_interval_turns }} turns (during payment period)</p>
 </section>
 {% endif %}
 

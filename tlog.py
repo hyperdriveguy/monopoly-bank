@@ -68,11 +68,21 @@ class TransactionLog:
                 borrower_id TEXT,
                 principal INTEGER,
                 interest_rate REAL,
-                payment_interval INTEGER,
-                created_at REAL,
+                payment_interval_turns INTEGER,
+                created_at_turn INTEGER,
                 status TEXT,
                 amount_paid INTEGER,
-                next_payment_due REAL)
+                next_payment_due_turn INTEGER,
+                interest_compounds BOOLEAN DEFAULT 1,
+                compounding_interval_turns INTEGER DEFAULT 3,
+                late_fees INTEGER DEFAULT 0,
+                loan_term_periods INTEGER DEFAULT 12)
+            """
+        )
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS GameState(
+                key TEXT PRIMARY KEY,
+                value INTEGER)
             """
         )
         while True:
@@ -301,11 +311,11 @@ class TransactionLog:
         self._send_transaction_to_listener(trans_type, seller_id, info)
 
     # Loan methods
-    def create_loan(self, loan_id, borrower_id, principal, interest_rate, payment_interval, created_at, next_payment_due):
+    def create_loan(self, loan_id, borrower_id, principal, interest_rate, payment_interval_turns, created_at_turn, next_payment_due_turn, interest_compounds=True, compounding_interval_turns=3, late_fees=0, loan_term_periods=3):
         self.exec_queue.put((
             True,
-            "INSERT INTO Loans VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?)",
-            (loan_id, borrower_id, principal, interest_rate, payment_interval, created_at, next_payment_due)
+            "INSERT INTO Loans VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, ?, ?, ?)",
+            (loan_id, borrower_id, principal, interest_rate, payment_interval_turns, created_at_turn, next_payment_due_turn, interest_compounds, compounding_interval_turns, late_fees, loan_term_periods)
         ))
         trans_type = 'Loan Created'
         info = f'Loan ID: {loan_id}, Amount: ${principal}, Interest: {int(interest_rate * 100)}%'
@@ -319,11 +329,11 @@ class TransactionLog:
         ))
         return self.receive_data.get()
 
-    def update_loan(self, loan_id, amount_paid, status, next_payment_due):
+    def update_loan(self, loan_id, amount_paid, status, next_payment_due_turn):
         self.exec_queue.put((
             True,
-            "UPDATE Loans SET amount_paid=?, status=?, next_payment_due=? WHERE loan_id=?",
-            (amount_paid, status, next_payment_due, loan_id)
+            "UPDATE Loans SET amount_paid=?, status=?, next_payment_due_turn=? WHERE loan_id=?",
+            (amount_paid, status, next_payment_due_turn, loan_id)
         ))
 
     def log_loan_payment(self, loan_id, borrower_id, amount, paid_off):
@@ -341,6 +351,28 @@ class TransactionLog:
         trans_type = 'Payment Due'
         info = f'Loan ID: {loan_id}, Minimum: ${minimum_payment}, Balance: ${remaining_balance}'
         self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    # Game state methods
+    def get_game_state(self, key):
+        """Retrieve a game state value from the database."""
+        self.exec_queue.put((
+            False,
+            "SELECT value FROM GameState WHERE key=?",
+            (key,)
+        ))
+        result = self.receive_data.get()
+        if result:
+            return result[0][0]
+        return None
+
+    def set_game_state(self, key, value):
+        """Save a game state value to the database."""
+        self.exec_queue.put((
+            True,
+            "INSERT OR REPLACE INTO GameState (key, value) VALUES (?, ?)",
+            (key, value)
+        ))
+
 
     def log_loan_erased(self, loan_id, borrower_id, amount):
         trans_type = 'Loan Erased'

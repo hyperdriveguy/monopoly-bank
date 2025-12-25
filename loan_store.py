@@ -18,28 +18,52 @@ class Loan:
     Represents a loan given to a player.
     Stores the interest rate at time of creation and tracks payments.
     """
+    # Class variable to track current turn for all loan instances
+    _current_turn = 0
+    
     def __init__(self, loan_id, borrower_id, principal, interest_rate, 
-                 payment_interval, created_at=None, status=LoanStatus.ACTIVE,
-                 amount_paid=0, next_payment_due=None):
+                 payment_interval_turns, created_at_turn=0, status=LoanStatus.ACTIVE,
+                 amount_paid=0, next_payment_due_turn=None, interest_compounds=True,
+                 compounding_interval_turns=None, late_fees=0, loan_term_periods=3):
         self.loan_id = loan_id
         self.borrower_id = borrower_id
         self.principal = principal  # Original loan amount
-        self.interest_rate = interest_rate  # Interest rate when loan was created
-        self.payment_interval = payment_interval  # In seconds (e.g., 300 for 5 minutes)
-        self.created_at = created_at or time.time()
+        self.interest_rate = interest_rate  # Interest rate when loan was created (locked in)
+        self.payment_interval_turns = payment_interval_turns  # In turns (e.g., 3 for every 3 turns)
+        self.created_at_turn = created_at_turn  # Turn when loan was created
         self.status = status
         self.amount_paid = amount_paid
-        self.next_payment_due = next_payment_due or (self.created_at + payment_interval)
+        self.next_payment_due_turn = next_payment_due_turn if next_payment_due_turn is not None else (self.created_at_turn + payment_interval_turns)
+        self.interest_compounds = interest_compounds  # Whether interest compounds (default True)
+        # Default compounding interval is the payment interval
+        self.compounding_interval_turns = compounding_interval_turns if compounding_interval_turns is not None else payment_interval_turns
+        self.late_fees = late_fees  # Accumulated late fees
+        self.late_fee_per_turn = 25  # $25 per turn for being overdue
+        self.loan_term_periods = loan_term_periods  # Number of payment periods to pay off loan (default 12)
         
     @property
     def total_owed(self):
         """Calculate total amount owed including interest."""
-        return int(self.principal * (1 + self.interest_rate))
+        if self.interest_compounds:
+            # Compound interest: principal * (1 + rate) ^ (periods elapsed / compounding interval)
+            # Default compounding interval is set when loan was created
+            # Use Loan._current_turn to track periods
+            periods_elapsed = Loan._current_turn - self.created_at_turn
+            if periods_elapsed < 0:
+                periods_elapsed = 0  # Don't go negative if current turn is before creation
+            # Number of compounding periods that have passed
+            # This is set per loan when it's created (stored in the Loan object)
+            compounding_periods = periods_elapsed / max(1, self.compounding_interval_turns)
+            total = self.principal * ((1 + self.interest_rate) ** compounding_periods)
+            return int(total)
+        else:
+            # Simple interest: principal * (1 + rate)
+            return int(self.principal * (1 + self.interest_rate))
     
     @property
     def remaining_balance(self):
-        """Calculate remaining balance after payments."""
-        return self.total_owed - self.amount_paid
+        """Calculate remaining balance after payments and late fees."""
+        return self.total_owed + self.late_fees - self.amount_paid
     
     @property
     def minimum_payment(self):
@@ -49,11 +73,57 @@ class Loan:
         return min(min_pct, self.remaining_balance)
     
     @property
-    def is_overdue(self):
-        """Check if payment is overdue."""
-        return self.status == LoanStatus.ACTIVE and time.time() > self.next_payment_due
+    def typical_payment(self):
+        """Calculate amortized payment using standard loan formula.
+        M = P * r(1+r)^N / ((1+r)^N - 1)
+        Where:
+        - P = principal (locked in at creation)
+        - r = periodic interest rate (interest_rate per compounding_interval)
+        - N = total number of payment periods (loan_term_periods)
+        
+        This ensures consistent payments that will pay off the loan over its lifetime.
+        Rounded up to nearest dollar to ensure full payoff.
+        """
+        if self.principal <= 0 or self.loan_term_periods <= 0:
+            return 0
+        
+        # Get periodic interest rate
+        # The interest_rate applies per compounding_interval_turns
+        # We need the effective rate per payment_interval_turns
+        periods_per_payment = self.payment_interval_turns / max(1, self.compounding_interval_turns)
+        
+        if self.interest_compounds and self.interest_rate > 0:
+            # Effective periodic rate for payment interval
+            # (1 + r_compound)^(periods_per_payment) - 1
+            periodic_rate = (1 + self.interest_rate) ** periods_per_payment - 1
+            
+            # Amortized payment formula: M = P * r(1+r)^N / ((1+r)^N - 1)
+            if periodic_rate > 0:
+                numerator = self.principal * periodic_rate * ((1 + periodic_rate) ** self.loan_term_periods)
+                denominator = ((1 + periodic_rate) ** self.loan_term_periods) - 1
+                # Round up to nearest dollar to ensure full payoff without remainder
+                import math
+                return math.ceil(numerator / denominator)
+            else:
+                # No interest, divide evenly and round up
+                import math
+                return math.ceil(self.principal / self.loan_term_periods)
+        else:
+            # Simple interest: divide principal evenly over periods, round up
+            import math
+            return math.ceil(self.principal / self.loan_term_periods)
     
-    def make_payment(self, amount):
+    @property
+    def is_overdue(self):
+        """Check if payment is overdue (AFTER the due turn, not on the due turn)."""
+        return self.status == LoanStatus.ACTIVE and Loan._current_turn > self.next_payment_due_turn
+    
+    @property
+    def is_due_this_turn(self):
+        """Check if payment is due this turn (payment can still be made without penalty)."""
+        return self.status == LoanStatus.ACTIVE and Loan._current_turn == self.next_payment_due_turn
+    
+    def make_payment(self, amount, current_turn):
         """
         Make a payment towards the loan.
         Returns True if loan is paid off, False otherwise.
@@ -69,15 +139,22 @@ class Loan:
         
         self.amount_paid += amount
         
-        # Check if loan is paid off
+        # Check if loan is paid off (before updating next payment due)
         if self.remaining_balance <= 0:
             self.status = LoanStatus.PAID_OFF
             return True, f"Loan paid off! Total paid: ${self.amount_paid}"
         
-        # Update next payment due date
-        self.next_payment_due = time.time() + self.payment_interval
+        # Update next payment due turn only if loan is still active
+        self.next_payment_due_turn = current_turn + self.payment_interval_turns
         
         return False, f"Payment of ${amount} applied. Remaining balance: ${self.remaining_balance}"
+    
+    def accumulate_late_fees(self):
+        """Add late fees if payment is overdue. Called each turn."""
+        if self.is_overdue:
+            self.late_fees += self.late_fee_per_turn
+            return self.late_fee_per_turn
+        return 0
     
     def default_loan(self):
         """Mark the loan as defaulted."""
@@ -90,11 +167,14 @@ class Loan:
             'borrower_id': self.borrower_id,
             'principal': self.principal,
             'interest_rate': self.interest_rate,
-            'payment_interval': self.payment_interval,
-            'created_at': self.created_at,
+            'payment_interval_turns': self.payment_interval_turns,
+            'created_at_turn': self.created_at_turn,
             'status': self.status.value,
             'amount_paid': self.amount_paid,
-            'next_payment_due': self.next_payment_due
+            'next_payment_due_turn': self.next_payment_due_turn,
+            'interest_compounds': self.interest_compounds,
+            'compounding_interval_turns': self.compounding_interval_turns,
+            'late_fees': self.late_fees
         }
     
     @classmethod
@@ -105,11 +185,14 @@ class Loan:
             borrower_id=data['borrower_id'],
             principal=data['principal'],
             interest_rate=data['interest_rate'],
-            payment_interval=data['payment_interval'],
-            created_at=data['created_at'],
+            payment_interval_turns=data['payment_interval_turns'],
+            created_at_turn=data['created_at_turn'],
             status=LoanStatus(data['status']),
             amount_paid=data['amount_paid'],
-            next_payment_due=data['next_payment_due']
+            next_payment_due_turn=data['next_payment_due_turn'],
+            interest_compounds=data.get('interest_compounds', True),
+            compounding_interval_turns=data.get('compounding_interval_turns', None),
+            late_fees=data.get('late_fees', 0)
         )
 
 
@@ -117,6 +200,7 @@ class LoanManager:
     """
     Manages all loans in the game.
     Handles loan qualification, creation, payments, and notifications.
+    Uses turn-based payment intervals instead of time-based.
     """
     
     def __init__(self, tlog_connection, account_manager):
@@ -124,11 +208,12 @@ class LoanManager:
         self.tlog_connection = tlog_connection
         self.account_manager = account_manager
         self.write_lock = Lock()
-        self.payment_timers = {}  # loan_id -> Timer
+        self.payment_timers = {}  # loan_id -> Timer (kept for compatibility but not used for payment intervals)
         self.loan_interest_rate = 0.15  # Default 15% interest rate for new loans
         self.min_credit_score = 500  # Minimum "cash + property value" for loan eligibility
         self.max_loan_amount = 1000  # Maximum loan amount
-        self.default_payment_interval = 300  # Default 5 minutes in seconds
+        self.default_payment_interval_turns = 3  # Default 3 turns between payments
+        self.compounding_interval_turns = 3  # Default: compound interest every payment period (3 turns)
         self.load_saved()
     
     def load_saved(self):
@@ -137,16 +222,24 @@ class LoanManager:
         self.write_lock.acquire()
         self.loans = {}
         for loan_row in loan_data:
+            # Handle both old schema and new schema with additional columns
+            interest_compounds = loan_row[9] if len(loan_row) > 9 else True
+            compounding_interval_turns = loan_row[10] if len(loan_row) > 10 else None
+            late_fees = loan_row[11] if len(loan_row) > 11 else 0
             loan = Loan(
                 loan_id=loan_row[0],
                 borrower_id=loan_row[1],
                 principal=loan_row[2],
                 interest_rate=loan_row[3],
-                payment_interval=loan_row[4],
-                created_at=loan_row[5],
+                payment_interval_turns=loan_row[4],
+                created_at_turn=loan_row[5],
                 status=LoanStatus(loan_row[6]),
                 amount_paid=loan_row[7],
-                next_payment_due=loan_row[8]
+                next_payment_due_turn=loan_row[8],
+                interest_compounds=interest_compounds,
+                compounding_interval_turns=compounding_interval_turns,
+                late_fees=late_fees,
+                loan_term_periods=3  # Default to 3 payment periods
             )
             self.loans[loan.loan_id] = loan
         self.write_lock.release()
@@ -173,9 +266,10 @@ class LoanManager:
         
         return score
     
-    def check_loan_eligibility(self, borrower_id, requested_amount):
+    def check_loan_eligibility(self, borrower_id, requested_amount=0):
         """
         Check if a player qualifies for a loan.
+        If requested_amount is 0 or not provided, just checks general eligibility.
         Returns (eligible: bool, reason: str, max_amount: int)
         """
         account = self.account_manager.query(borrower_id)
@@ -199,15 +293,17 @@ class LoanManager:
         if max_loan <= 0:
             return False, f"Too much existing debt (${total_debt}). Pay off loans first.", 0
         
-        if requested_amount > max_loan:
+        # Only check against requested amount if a specific amount was provided
+        if requested_amount > 0 and requested_amount > max_loan:
             return False, f"Requested ${requested_amount} exceeds maximum ${max_loan}", max_loan
         
         return True, "Qualified for loan", max_loan
     
-    def create_loan(self, borrower_id, amount, payment_interval=None, approved_by_banker=False):
+    def create_loan(self, borrower_id, amount, payment_interval_turns=None, approved_by_banker=False, current_turn=0, interest_compounds=True, loan_term_periods=None):
         """
         Create a new loan for a player.
         If approved_by_banker is True, bypasses credit checks.
+        interest_compounds: Whether the loan uses compound interest (default True for users)
         Returns (success: bool, loan_id or error_message: str)
         """
         # Check eligibility unless banker approved
@@ -222,16 +318,20 @@ class LoanManager:
         
         # Create loan
         loan_id = str(uuid.uuid4())[:8]
-        interval = payment_interval if payment_interval else self.default_payment_interval
+        interval = payment_interval_turns if payment_interval_turns else self.default_payment_interval_turns
+        term = loan_term_periods if loan_term_periods else 12  # Default to 12 payment periods
         
         loan = Loan(
             loan_id=loan_id,
             borrower_id=borrower_id,
             principal=amount,
             interest_rate=self.loan_interest_rate,
-            payment_interval=interval,
-            created_at=time.time(),
-            status=LoanStatus.ACTIVE
+            payment_interval_turns=interval,
+            created_at_turn=current_turn,
+            status=LoanStatus.ACTIVE,
+            interest_compounds=interest_compounds,
+            compounding_interval_turns=self.compounding_interval_turns,
+            loan_term_periods=term
         )
         
         self.write_lock.acquire()
@@ -241,7 +341,8 @@ class LoanManager:
         # Save to database
         self.tlog_connection.create_loan(
             loan_id, borrower_id, amount, self.loan_interest_rate,
-            interval, loan.created_at, loan.next_payment_due
+            interval, loan.created_at_turn, loan.next_payment_due_turn,
+            interest_compounds, self.compounding_interval_turns, late_fees=0, loan_term_periods=term
         )
         
         # Deposit loan amount into account
@@ -249,7 +350,7 @@ class LoanManager:
         
         return True, loan_id
     
-    def make_payment(self, loan_id, amount):
+    def make_payment(self, loan_id, amount, current_turn=0):
         """
         Make a payment on a loan.
         Returns (success: bool, message: str)
@@ -271,11 +372,11 @@ class LoanManager:
         account.withdraw(amount, log=True)
         
         # Apply payment to loan
-        paid_off, message = loan.make_payment(amount)
+        paid_off, message = loan.make_payment(amount, current_turn)
         
         # Update database
         self.tlog_connection.update_loan(
-            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
         )
         
         # Log payment
@@ -305,7 +406,7 @@ class LoanManager:
         if loan.remaining_balance <= 0:
             loan.status = LoanStatus.PAID_OFF
             self.tlog_connection.update_loan(
-                loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+                loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
             )
             self.tlog_connection.log_loan_payment(
                 loan_id, loan.borrower_id, loan.amount_paid, True
@@ -317,7 +418,7 @@ class LoanManager:
         
         # Update database
         self.tlog_connection.update_loan(
-            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
         )
         
         # Log default
@@ -337,12 +438,12 @@ class LoanManager:
         if account.cash > 0:
             cash_payment = min(account.cash, loan.remaining_balance)
             account.withdraw(cash_payment, log=True)
-            loan.make_payment(cash_payment)
+            loan.make_payment(cash_payment, 0)  # Use turn 0 for liquidation
             total_liquidated += cash_payment
             liquidated_items.append(f"${cash_payment} cash")
             
             self.tlog_connection.update_loan(
-                loan.loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+                loan.loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
             )
         
         # If still unpaid, sell properties
@@ -367,13 +468,13 @@ class LoanManager:
                 # Apply to loan
                 payment = min(prop_value, loan.remaining_balance)
                 account.withdraw(payment, log=False)
-                loan.make_payment(payment)
+                loan.make_payment(payment, 0)  # Use turn 0 for liquidation
                 
                 total_liquidated += payment
                 liquidated_items.append(f"{prop.name} (${payment})")
                 
                 self.tlog_connection.update_loan(
-                    loan.loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+                    loan.loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
                 )
         
         if total_liquidated > 0:
@@ -405,7 +506,7 @@ class LoanManager:
         
         loan.status = LoanStatus.RESOLVED
         self.tlog_connection.update_loan(
-            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due
+            loan_id, loan.amount_paid, loan.status.value, loan.next_payment_due_turn
         )
         
         return True, f"Default on loan {loan_id} has been forgiven. Account can now borrow again."
@@ -452,6 +553,22 @@ class LoanManager:
         """Get all loans that are overdue for payment."""
         return [loan for loan in self.loans.values() if loan.is_overdue]
     
+    def apply_late_fees_all(self):
+        """
+        Apply late fees to all overdue loans.
+        Called at the start of each turn.
+        Returns dict of borrower_id -> accumulated late fees for that turn.
+        """
+        late_fees_charged = {}
+        for loan in self.loans.values():
+            if loan.status == LoanStatus.ACTIVE:
+                fee = loan.accumulate_late_fees()
+                if fee > 0:
+                    if loan.borrower_id not in late_fees_charged:
+                        late_fees_charged[loan.borrower_id] = 0
+                    late_fees_charged[loan.borrower_id] += fee
+        return late_fees_charged
+    
     def send_payment_notification(self, loan_id):
         """
         Send a payment notification for a loan.
@@ -467,16 +584,17 @@ class LoanManager:
         
         return True, f"Notification sent for loan {loan_id}"
     
-    def schedule_payment_notification(self, loan_id, delay_seconds=None):
+    def schedule_payment_notification(self, loan_id, delay_turns=None):
         """
         Schedule a payment notification to be sent after a delay.
-        If delay_seconds is None, uses the loan's payment interval.
+        If delay_turns is None, uses the loan's payment interval.
+        Note: This method is kept for compatibility but payment intervals are now turn-based.
         """
         if loan_id not in self.loans:
             return False, "Loan not found"
         
         loan = self.loans[loan_id]
-        delay = delay_seconds if delay_seconds is not None else loan.payment_interval
+        delay = delay_turns if delay_turns is not None else loan.payment_interval_turns
         
         # Cancel existing timer if any
         if loan_id in self.payment_timers:

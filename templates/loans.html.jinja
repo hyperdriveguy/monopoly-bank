@@ -21,7 +21,7 @@
                 <p>Borrower: {{ loan.borrower_id }}</p>
                 {% endif %}
                 <p>Principal: ${{ loan.principal }}</p>
-                <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                <p>Interest: {{ (loan.interest_rate * 100)|int }}% ({% if loan.interest_compounds %}Compound{% else %}Simple{% endif %})</p>
                 <p style="color: red;"><strong>OVERDUE</strong></p>
                 <p>Balance: ${{ loan.remaining_balance }}</p>
                 <p>Minimum Payment: ${{ loan.minimum_payment }}</p>
@@ -38,14 +38,17 @@
     {% if active_loans %}
         {% for loan in active_loans %}
         {% if not loan.is_overdue %}
-        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable">
+        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable {% if loan.is_due_this_turn %}due{% endif %}">
             <article>
                 <h3>Loan #{{ loan.loan_id }}</h3>
                 {% if is_banker %}
                 <p>Borrower: {{ loan.borrower_id }}</p>
                 {% endif %}
                 <p>Principal: ${{ loan.principal }}</p>
-                <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                <p>Interest: {{ (loan.interest_rate * 100)|int }}% ({% if loan.interest_compounds %}Compound{% else %}Simple{% endif %})</p>
+                {% if loan.is_due_this_turn %}
+                <p style="color: orange;"><strong>Payment due this turn!</strong></p>
+                {% endif %}
                 <p>Total Owed: ${{ loan.total_owed }}</p>
                 <p>Paid: ${{ loan.amount_paid }}</p>
                 <p>Balance: ${{ loan.remaining_balance }}</p>
@@ -70,6 +73,7 @@
                 <p>Borrower: {{ loan.borrower_id }}</p>
                 {% endif %}
                 <p>Principal: ${{ loan.principal }}</p>
+                <p>Interest: ({% if loan.interest_compounds %}Compound{% else %}Simple{% endif %})</p>
                 <p>Status: <strong>{{ loan.status.value.upper() }}</strong></p>
                 <p>Paid: ${{ loan.amount_paid }} / ${{ loan.total_owed }}</p>
             </article>

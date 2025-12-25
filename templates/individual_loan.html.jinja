@@ -8,22 +8,29 @@
     <p>Borrower: <strong>{{ borrower.name }} ({{ loan.borrower_id }})</strong></p>
     <p>Status: <strong>{{ loan.status.value.upper() }}</strong></p>
     {% if loan.is_overdue %}
-    <p style="color: red;"><strong>⚠ PAYMENT OVERDUE</strong></p>
+    <p style="color: red;"><strong>⚠ PAYMENT OVERDUE - Late fees accruing!</strong></p>
+    {% elif loan.is_due_this_turn %}
+    <p style="color: orange;"><strong>⚠ PAYMENT DUE THIS TURN</strong></p>
     {% endif %}
     
     <hr>
     
     <p>Principal: ${{ loan.principal }}</p>
     <p>Interest Rate: {{ (loan.interest_rate * 100)|int }}%</p>
+    <p>Interest Type: {% if loan.interest_compounds %}<strong>Compound</strong>{% else %}<strong>Simple</strong>{% endif %}</p>
     <p>Total Owed: <strong>${{ loan.total_owed }}</strong></p>
+    {% if loan.late_fees > 0 %}
+    <p style="color: red;">Late Fees: <strong>${{ loan.late_fees }}</strong></p>
+    {% endif %}
     <p>Amount Paid: ${{ loan.amount_paid }}</p>
     <p>Remaining Balance: <strong>${{ loan.remaining_balance }}</strong></p>
     
     {% if loan.status.value == 'active' %}
     <hr>
     <p>Minimum Payment: <strong>${{ loan.minimum_payment }}</strong></p>
-    <p>Payment Interval: {{ loan.payment_interval }} seconds</p>
-    <p>Next Payment Due: {{ loan.next_payment_due|int }}</p>
+    <p>Typical Payment: <strong>${{ loan.typical_payment }}</strong> (recommended to stay on track)</p>
+    <p>Payment Interval: {{ loan.payment_interval_turns }} turns</p>
+    <p>Next Payment Due: Turn {{ loan.next_payment_due_turn }}</p>
     {% endif %}
 </div>
 
@@ -44,8 +51,13 @@
         
         <div style="margin: 1em 0;">
             {% if loan.minimum_payment > 0 %}
-            <button type="button" onclick="document.getElementById('payment-amount').value='{{ loan.minimum_payment }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer;">
-                Minimum (${{ loan.minimum_payment }})
+            <button type="button" onclick="document.getElementById('payment-amount').value='{{ [loan.minimum_payment, loan.remaining_balance]|min }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer;">
+                Minimum (${{ [loan.minimum_payment, loan.remaining_balance]|min }})
+            </button>
+            {% endif %}
+            {% if loan.typical_payment > 0 %}
+            <button type="button" onclick="document.getElementById('payment-amount').value='{{ [loan.typical_payment, loan.remaining_balance]|min }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer; background-color: #2196F3; color: white; border: none; border-radius: 4px;">
+                Typical (${{ [loan.typical_payment, loan.remaining_balance]|min }})
             </button>
             {% endif %}
             <button type="button" onclick="document.getElementById('payment-amount').value='{{ loan.remaining_balance }}'" style="padding: 8px 16px; margin: 5px; cursor: pointer;">

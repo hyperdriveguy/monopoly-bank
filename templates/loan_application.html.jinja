@@ -10,12 +10,23 @@
     <p>Please contact the banker to negotiate a settlement or arrange payment plan.</p>
     <a href="{{ url_for('loans_page') }}" style="display: inline-block; padding: 10px 20px; background-color: #d32f2f; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; cursor: pointer;">View Your Loans</a>
 </div>
-{% elif eligible %}
+{% elif eligible and not is_banker %}
 <div class="card-stylize" style="background-color: #e8f5e9; border: 2px solid green;">
     <h3>✓ You qualify for credit!</h3>
     <p>Maximum loan amount: <strong>${{ max_amount }}</strong></p>
     <p>Current interest rate: <strong>{{ (loan_interest_rate * 100)|int }}%</strong></p>
-    <p>Payment interval: <strong>{{ default_interval }} seconds</strong></p>
+    <p>Interest type: <strong>Compound</strong></p>
+    <p>Payment interval: <strong>{{ default_interval }} turns</strong></p>
+    <p>Loan length: <strong>{{ default_loan_term }} payment periods</strong></p>
+    <p>Typical payment: <strong>${{ typical_payment }}</strong> <em>(for a ${{ max_amount }} loan)</em></p>
+</div>
+{% elif eligible and is_banker %}
+<div class="card-stylize" style="background-color: #e8f5e9; border: 2px solid green;">
+    <p>Current interest rate: <strong>{{ (loan_interest_rate * 100)|int }}%</strong></p>
+    <p>Interest type: <strong>Compound</strong></p>
+    <p>Payment interval: <strong>{{ default_interval }} turns</strong></p>
+    <p>Loan length: <strong>{{ default_loan_term }} payment periods</strong></p>
+    <p>System maximum loan amount: <strong>${{ max_amount }}</strong></p>
 </div>
 {% else %}
 <div class="card-stylize" style="background-color: #ffebee; border: 2px solid red;">
@@ -47,9 +58,20 @@
     
     {% if is_banker %}
     <div class="label-align">
-        <label for="payment-interval">Payment Interval (seconds):</label>
+        <label for="payment-interval">Payment Interval (turns):</label>
         <input type="number" id="payment-interval" name="payment-interval" 
                value="{{ default_interval }}" min="1">
+    </div>
+    
+    <div class="label-align">
+        <label for="loan-term">Loan Length (payment periods):</label>
+        <input type="number" id="loan-term" name="loan-term" 
+               value="{{ default_loan_term }}" min="1" max="60">
+    </div>
+    
+    <div class="checkbox">
+        <input type="checkbox" id="simple-interest" name="simple-interest">
+        <label for="simple-interest">Use simple interest (default: compound interest)</label>
     </div>
     
     <div class="checkbox">
@@ -59,7 +81,8 @@
     {% endif %}
     
     <input type="submit" value="Apply for Loan" {% if max_amount <= 0 and not is_banker %}disabled{% endif %}>
-</form>
+</form><strong>Interest Type:</strong> By default, all loans use compound interest. Bankers can issue simple interest loans if desired.</li>
+        <li>
 
 <div class="card-stylize">
     <h3>How Loans Work</h3>

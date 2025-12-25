@@ -80,10 +80,14 @@ def render_generic(template_path, **kwargs):
     """
     Render a "generic" Jinja template that has common key arguments.
     """
+    from loan_store import Loan
+    # Update the Loan class with current turn for is_overdue property
+    Loan._current_turn = game_state['current_turn']
+    
     user_realname = current_user.name if not current_user.is_anonymous else 'Log in'
     user_id = current_user.ident if not current_user.is_anonymous else ''
     is_banker = current_user.banker if not current_user.is_anonymous else False
-    return render_template(template_path, logged_in=(not current_user.is_anonymous), user_id=user_id, user_realname=user_realname, is_banker=is_banker, **kwargs)
+    return render_template(template_path, logged_in=(not current_user.is_anonymous), user_id=user_id, user_realname=user_realname, is_banker=is_banker, current_turn=game_state['current_turn'], **kwargs)
 
 
 if __name__ == '__main__':
@@ -97,6 +101,9 @@ if __name__ == '__main__':
     login_manager.init_app(app)
     login_manager.login_view = 'login'
 
+    # Global game state for turn-based mechanics
+    game_state = {'current_turn': 0}
+
     managed_props = PropertyManager('property_set.json')
 
     managed_accs = AccountManager(managed_props)
@@ -104,6 +111,11 @@ if __name__ == '__main__':
     managed_auctions = AuctionManager(managed_accs.tlog_connection)
 
     managed_loans = LoanManager(managed_accs.tlog_connection, managed_accs)
+
+    # Load current turn from database
+    saved_turn = managed_accs.tlog_connection.get_game_state('current_turn')
+    if saved_turn is not None:
+        game_state['current_turn'] = saved_turn
 
     # Global mortgage interest rate (as decimal, e.g., 0.10 = 10%)
     mortgage_interest_rate = {'value': 0.10}
@@ -164,16 +176,32 @@ if __name__ == '__main__':
                 elif 'max-loan-amount' in request.form:
                     managed_loans.max_loan_amount = int(request.form['max-loan-amount'])
                     flash(f'Maximum loan amount updated to ${managed_loans.max_loan_amount}')
-                # Banker can update default payment interval
-                elif 'payment-interval' in request.form:
-                    managed_loans.default_payment_interval = int(request.form['payment-interval'])
-                    flash(f'Payment interval updated to {managed_loans.default_payment_interval} seconds')
+                # Banker can increment turn
+                elif 'increment-turn' in request.form:
+                    game_state['current_turn'] += 1
+                    managed_accs.tlog_connection.set_game_state('current_turn', game_state['current_turn'])
+                    
+                    # Update Loan class to use new turn immediately for late fee calculation
+                    from loan_store import Loan
+                    Loan._current_turn = game_state['current_turn']
+                    
+                    # Apply late fees to overdue loans
+                    late_fees_charged = managed_loans.apply_late_fees_all()
+                    if late_fees_charged:
+                        fee_messages = [f"{borrower}: ${amount}" for borrower, amount in late_fees_charged.items()]
+                        flash(f'Turn incremented to {game_state["current_turn"]}. Late fees applied: {", ".join(fee_messages)}')
+                    else:
+                        flash(f'Turn incremented to {game_state["current_turn"]}')
+                # Banker can update compounding interval
+                elif 'compounding-interval' in request.form:
+                    managed_loans.compounding_interval_turns = int(request.form['compounding-interval'])
+                    flash(f'Compounding interval updated to every {managed_loans.compounding_interval_turns} turns')
         return render_generic('home.html.jinja', 
                             mortgage_interest_rate=mortgage_interest_rate['value'],
                             loan_interest_rate=managed_loans.loan_interest_rate,
                             min_credit_score=managed_loans.min_credit_score,
                             max_loan_amount=managed_loans.max_loan_amount,
-                            payment_interval=managed_loans.default_payment_interval)
+                            compounding_interval_turns=managed_loans.compounding_interval_turns)
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -482,10 +510,19 @@ if __name__ == '__main__':
             try:
                 requested_amount = int(request.form['loan-amount'])
                 payment_interval = None
+                loan_term_periods = None
+                interest_compounds = True  # Default to compound interest
                 
-                # Banker can override payment interval
+                # Banker can override payment interval, loan term, and interest type
                 if current_user.banker and 'payment-interval' in request.form:
                     payment_interval = int(request.form['payment-interval'])
+                
+                if current_user.banker and 'loan-term' in request.form:
+                    loan_term_periods = int(request.form['loan-term'])
+                
+                # Banker can choose simple interest (compound is default)
+                if current_user.banker and 'simple-interest' in request.form:
+                    interest_compounds = False
                 
                 # Get borrower ID (banker can apply for others)
                 borrower_id = current_user.ident
@@ -496,16 +533,18 @@ if __name__ == '__main__':
                     if 'borrower-id' in request.form and request.form['borrower-id'].strip():
                         borrower_id = request.form['borrower-id'].strip()
                     
-                    # Check if bypass credit check is selected
-                    if 'bypass-credit-check' in request.form and request.form.get('bypass-credit-check'):
-                        approved_by_banker = True
+                    # Bankers always bypass credit checks (can override if needed)
+                    approved_by_banker = True
                 
                 # Create loan
                 success, result = managed_loans.create_loan(
                     borrower_id, 
                     requested_amount, 
                     payment_interval,
-                    approved_by_banker
+                    approved_by_banker,
+                    game_state['current_turn'],
+                    interest_compounds,
+                    loan_term_periods
                 )
                 
                 if success:
@@ -521,6 +560,7 @@ if __name__ == '__main__':
         reason = ""
         max_amount = 0
         has_defaulted_loans = False
+        typical_payment = 0
         
         if not current_user.is_anonymous:
             has_defaulted_loans = managed_loans.has_defaulted_loans(current_user.ident)
@@ -533,9 +573,26 @@ if __name__ == '__main__':
             elif not has_defaulted_loans:
                 # Regular players are subject to credit checks
                 eligible, reason, max_amount = managed_loans.check_loan_eligibility(
-                    current_user.ident, 
-                    managed_loans.max_loan_amount
+                    current_user.ident
                 )
+            
+            # Calculate typical payment for max amount if eligible
+            if eligible and max_amount > 0:
+                # Create a temporary loan to calculate typical payment
+                from loan_store import Loan, LoanStatus
+                temp_loan = Loan(
+                    loan_id="temp",
+                    borrower_id=current_user.ident,
+                    principal=max_amount,
+                    interest_rate=managed_loans.loan_interest_rate,
+                    payment_interval_turns=managed_loans.default_payment_interval_turns,
+                    created_at_turn=game_state['current_turn'],
+                    status=LoanStatus.ACTIVE,
+                    interest_compounds=True,
+                    compounding_interval_turns=managed_loans.compounding_interval_turns,
+                    loan_term_periods=3
+                )
+                typical_payment = temp_loan.typical_payment
         
         return render_generic('loan_application.html.jinja',
                             eligible=eligible,
@@ -543,7 +600,9 @@ if __name__ == '__main__':
                             max_amount=max_amount,
                             has_defaulted_loans=has_defaulted_loans,
                             loan_interest_rate=managed_loans.loan_interest_rate,
-                            default_interval=managed_loans.default_payment_interval)
+                            default_interval=managed_loans.default_payment_interval_turns,
+                            default_loan_term=3,
+                            typical_payment=typical_payment)
 
 
     @app.route('/loans/<loan_id>', methods=['GET', 'POST'])
@@ -571,7 +630,7 @@ if __name__ == '__main__':
                 if current_user.banker or loan.borrower_id == current_user.ident:
                     try:
                         payment_amount = int(request.form['payment-amount'])
-                        success, message = managed_loans.make_payment(loan_id, payment_amount)
+                        success, message = managed_loans.make_payment(loan_id, payment_amount, game_state['current_turn'])
                         flash(message)
                         
                         # Reload loan to get updated data
@@ -597,7 +656,7 @@ if __name__ == '__main__':
                             flash(f'Insufficient funds. You have ${borrower.cash}, need ${settlement_amount}.')
                         else:
                             # Process settlement payment
-                            success, message = managed_loans.make_payment(loan_id, settlement_amount)
+                            success, message = managed_loans.make_payment(loan_id, settlement_amount, game_state['current_turn'])
                             flash(message)
                             
                             # If loan is paid off, forgive the default and notify
