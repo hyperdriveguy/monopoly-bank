@@ -3,4 +3,21 @@
 {% block content %}
 <h2>Home</h2>
 
+{% if is_banker %}
+<section>
+    <h3>Banker Settings</h3>
+    <form method="post">
+        <label for="mortgage-interest">Mortgage Interest Rate (%):</label>
+        <input type="number" id="mortgage-interest" name="mortgage-interest" min="0" max="100" step="1" value="{{ (mortgage_interest_rate * 100)|int }}" style="width: 80px;" required>
+        <button type="submit">Update Rate</button>
+    </form>
+    <p>Current rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
+</section>
+{% elif logged_in %}
+<section>
+    <h3>Game Settings</h3>
+    <p>Mortgage Interest Rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
+</section>
+{% endif %}
+
 {% endblock content %}

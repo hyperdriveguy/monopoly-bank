@@ -29,6 +29,28 @@
 </section>
 {% endif %}
 
+{% if logged_in and prop.owner and prop.owner == user_id %}
+<section>
+    <h3>Property Owner Controls</h3>
+    <h4>Mortgage Management</h4>
+    {% if prop.mortgaged %}
+    <p class="warning-red">⚠ Property is MORTGAGED (no rent collected)</p>
+    <form method="post">
+        <input type="hidden" name="action" value="unmortgage">
+        <p>Interest Rate: {{ (mortgage_interest_rate * 100)|int }}%</p>
+        <p>Unmortgage cost: ${{ (prop.mortgage_value * (1 + mortgage_interest_rate))|int }}</p>
+        <button type="submit">Unmortgage Property</button>
+    </form>
+    {% else %}
+    <form method="post">
+        <input type="hidden" name="action" value="mortgage">
+        <p>Mortgage value: ${{ prop.mortgage_value }}</p>
+        <button type="submit">Mortgage Property</button>
+    </form>
+    {% endif %}
+</section>
+{% endif %}
+
 {% if is_banker %}
 <section>
     <h3>Banker Controls</h3>
@@ -39,10 +61,56 @@
         <button type="submit">Sell Property</button>
     </form>
     {% else %}
-    <form method="post">
+    <h4>Buy Back Property</h4>
+    <div class="buyback-grid">
+        <form method="post">
+            <input type="hidden" name="action" value="buy-back">
+            <input type="hidden" name="fraction" value="0.25">
+            <button type="submit">25% (${{ (prop.costs['property'] * 0.25)|int }})</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="action" value="buy-back">
+            <input type="hidden" name="fraction" value="0.5">
+            <button type="submit">50% (${{ (prop.costs['property'] * 0.5)|int }})</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="action" value="buy-back">
+            <input type="hidden" name="fraction" value="0.75">
+            <button type="submit">75% (${{ (prop.costs['property'] * 0.75)|int }})</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="action" value="buy-back">
+            <input type="hidden" name="fraction" value="1.0">
+            <button type="submit">100% (${{ prop.costs['property'] }})</button>
+        </form>
+    </div>
+    <form method="post" class="custom-buyback-form">
         <input type="hidden" name="action" value="buy-back">
-        <button type="submit">Buy Back Property (${{ prop.costs['property'] }})</button>
+        <label for="custom-fraction">Custom %:</label>
+        <input type="number" id="custom-fraction" name="custom-fraction" min="0" max="200" step="1" placeholder="50" class="narrow-input">
+        <button type="submit">Buy Back</button>
     </form>
+    
+    {% if prop.can_build %}
+    <hr>
+    <h4>Building Management</h4>
+    <p>Current: {{ prop.building_level }}</p>
+    {% if prop.owner_has_full_set(prop_manager) %}
+    <p class="success-green">✓ Owner has full color set</p>
+    {% else %}
+    <p class="warning-orange">⚠ Warning: Owner does not have full color set</p>
+    {% endif %}
+    <div class="building-controls">
+        <form method="post">
+            <input type="hidden" name="action" value="add-building">
+            <button type="submit">Add Building {% if 'house' in prop.costs %}(${{ prop.costs['houses'] }}){% endif %}</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="action" value="remove-building">
+            <button type="submit">Remove Building</button>
+        </form>
+    </div>
+    {% endif %}
     {% endif %}
 </section>
 {% endif %}

@@ -19,7 +19,30 @@ class Property:
 
     @property
     def rent(self):
+        # Mortgaged properties collect no rent
+        if self.mortgaged:
+            return 0
         return self.rent_rates[self.rent_rate_index]
+
+    @property
+    def mortgage_value(self):
+        """Calculate mortgage value (half of property cost)."""
+        return self.costs['property'] // 2
+
+    def mortgage(self):
+        """Mortgage the property. Returns the mortgage value."""
+        if not self.mortgaged and self.owner:
+            self.mortgaged = True
+            return self.mortgage_value
+        return 0
+
+    def unmortgage(self, interest_rate=0.10):
+        """Unmortgage the property. Returns the cost to unmortgage (mortgage + interest)."""
+        if self.mortgaged and self.owner:
+            unmortgage_cost = int(self.mortgage_value * (1 + interest_rate))
+            self.mortgaged = False
+            return unmortgage_cost
+        return 0
 
     @property
     def json(self):
@@ -58,6 +81,68 @@ class Property:
             'mortgaged': self.mortgaged
         }
 
+    def upgrade(self):
+        """
+        Upgrade property to next building level (add house or hotel).
+        Returns True if successful, False otherwise.
+        """
+        if self.prop_type != 'buildable' or not self.owner:
+            return False
+        
+        upgrade_sequence = ['Base', 'Color set', '1 House', '2 Houses', '3 Houses', '4 Houses', 'Hotel']
+        
+        if self.rent_rate_index not in upgrade_sequence:
+            return False
+        
+        current_index = upgrade_sequence.index(self.rent_rate_index)
+        if current_index < len(upgrade_sequence) - 1:
+            self.rent_rate_index = upgrade_sequence[current_index + 1]
+            return True
+        return False
+
+    def downgrade(self, property_manager=None):
+        """
+        Downgrade property to previous building level (remove house or hotel).
+        Returns True if successful, False otherwise.
+        If owner doesn't have full color set, skip 'Color set' tier and go to 'Base'.
+        """
+        if self.prop_type != 'buildable' or not self.owner:
+            return False
+        
+        downgrade_sequence = ['Hotel', '4 Houses', '3 Houses', '2 Houses', '1 House', 'Color set']
+        
+        if self.rent_rate_index not in downgrade_sequence:
+            return False
+        
+        current_index = downgrade_sequence.index(self.rent_rate_index)
+        if current_index < len(downgrade_sequence) - 1:
+            next_level = downgrade_sequence[current_index + 1]
+            # If next level would be 'Color set' but owner doesn't have full set, go to 'Base'
+            if next_level == 'Color set' and property_manager:
+                if not self.owner_has_full_set(property_manager):
+                    next_level = 'Base'
+            self.rent_rate_index = next_level
+            return True
+        return False
+
+    @property
+    def can_build(self):
+        """Check if property can have buildings added."""
+        return self.prop_type == 'buildable' and self.owner is not None and not self.mortgaged
+
+    @property
+    def building_level(self):
+        """Get the current building level as a readable string."""
+        if self.rent_rate_index in ['Base', 'Color set']:
+            return 'No buildings'
+        return self.rent_rate_index
+
+    def owner_has_full_set(self, property_manager):
+        """Check if the owner has the full color set for this property."""
+        if not self.color or not self.owner:
+            return False
+        return property_manager.check_full_set(self.color)
+
 
 class PropertyManager:
     """
@@ -95,16 +180,20 @@ class PropertyManager:
     def update_color_set_rent(self, color):
         """
         Updates rent index if a color set is completed or broken.
-        If a color set is broken, the rent rate will be reset back to base rent.
+        If a color set is broken, properties with buildings keep their buildings.
+        Only properties without buildings (Base or Color set) are updated.
         """
         is_full_set = self.check_full_set(color)
         print('Color set is complete!') if is_full_set else print('Color set seperated.')
         for prop in self.complete_sets[color]:
             print(prop.name)
-            if is_full_set:
-                prop.rent_rate_index = 'Color set'
-            else:
-                prop.rent_rate_index = 'Base'
+            # Only update properties without buildings
+            if prop.rent_rate_index in ['Base', 'Color set']:
+                if is_full_set:
+                    prop.rent_rate_index = 'Color set'
+                else:
+                    prop.rent_rate_index = 'Base'
+            # Properties with buildings keep their buildings even if set is broken
 
     @cached_property
     def all_properties(self):

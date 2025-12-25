@@ -97,6 +97,9 @@ if __name__ == '__main__':
 
     managed_accs = AccountManager(managed_props)
 
+    # Global mortgage interest rate (as decimal, e.g., 0.10 = 10%)
+    mortgage_interest_rate = {'value': 0.10}
+
 
     @login_manager.user_loader
     def load_user(ident):
@@ -130,11 +133,16 @@ if __name__ == '__main__':
     # All functions below tie to specific site routes
 
 
-    @app.route('/')
+    @app.route('/', methods=['GET', 'POST'])
     def home_page():
         if not current_user.is_anonymous:
             flash(current_user)
-        return render_generic('home.html.jinja')
+            # Banker can update mortgage interest rate
+            if current_user.banker and request.method == 'POST' and 'mortgage-interest' in request.form:
+                new_rate = float(request.form['mortgage-interest']) / 100.0
+                mortgage_interest_rate['value'] = new_rate
+                flash(f'Mortgage interest rate updated to {int(new_rate * 100)}%')
+        return render_generic('home.html.jinja', mortgage_interest_rate=mortgage_interest_rate['value'])
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -279,6 +287,22 @@ if __name__ == '__main__':
                 else:
                     result = managed_accs.transfer(current_user.ident, prop.owner, prop.rent)
                     flash(result)
+            # Mortgage/Unmortgage (property owner only)
+            elif 'action' in request.form and request.form['action'] == 'mortgage':
+                if current_user.is_anonymous:
+                    abort(403)
+                if prop.owner != current_user.ident:
+                    abort(403)
+                result = managed_accs.mortgage_property(prop.owner, prop)
+                flash(result)
+            elif 'action' in request.form and request.form['action'] == 'unmortgage':
+                if current_user.is_anonymous:
+                    abort(403)
+                if prop.owner != current_user.ident:
+                    abort(403)
+                # Use global interest rate set by banker
+                result = managed_accs.unmortgage_property(prop.owner, prop, mortgage_interest_rate['value'])
+                flash(result)
             # Banker operations
             elif current_user.is_anonymous or not current_user.banker:
                 abort(403)
@@ -290,12 +314,52 @@ if __name__ == '__main__':
             # Buy back property from player
             elif 'action' in request.form and request.form['action'] == 'buy-back':
                 if prop.owner:
-                    result = managed_accs.buy_property(prop.owner, prop)
+                    # Get fraction from form (default 50%)
+                    fraction = 0.5
+                    if 'fraction' in request.form:
+                        fraction = float(request.form['fraction'])
+                    elif 'custom-fraction' in request.form and request.form['custom-fraction']:
+                        fraction = float(request.form['custom-fraction']) / 100.0
+                    
+                    result = managed_accs.buy_property(prop.owner, prop, fraction)
                     flash(result)
                 else:
                     flash('Property is not owned by anyone.')
+            # Add building (house or hotel)
+            elif 'action' in request.form and request.form['action'] == 'add-building':
+                # Check if owner has full color set before allowing building
+                if not prop.owner_has_full_set(managed_props):
+                    flash(f'Cannot add buildings to {prop.name}. Owner must have the full color set first.')
+                elif prop.upgrade():
+                    owner = managed_accs.query(prop.owner)
+                    if owner != 'Account does not exist.':
+                        # Withdraw building cost from owner
+                        building_cost = prop.costs.get('houses', 0)
+                        owner.withdraw(building_cost)
+                        # Save property state to database
+                        owner.update_property_state()
+                        flash(f'Added building to {prop.name}. Now at: {prop.building_level}. Cost: ${building_cost}')
+                    else:
+                        flash(f'Added building to {prop.name}. Now at: {prop.building_level}')
+                else:
+                    flash(f'Cannot add building to {prop.name}. Already at maximum or not buildable.')
+            # Remove building
+            elif 'action' in request.form and request.form['action'] == 'remove-building':
+                if prop.downgrade(managed_props):
+                    owner = managed_accs.query(prop.owner)
+                    if owner != 'Account does not exist.':
+                        # Return half the building cost to owner
+                        building_cost = prop.costs.get('houses', 0) // 2
+                        owner.deposit(building_cost)
+                        # Save property state to database
+                        owner.update_property_state()
+                        flash(f'Removed building from {prop.name}. Now at: {prop.building_level}. Refund: ${building_cost}')
+                    else:
+                        flash(f'Removed building from {prop.name}. Now at: {prop.building_level}')
+                else:
+                    flash(f'Cannot remove building from {prop.name}. No buildings to remove.')
         
-        return render_generic('individual_property.html.jinja', prop=prop)
+        return render_generic('individual_property.html.jinja', prop=prop, prop_manager=managed_props, mortgage_interest_rate=mortgage_interest_rate['value'])
 
 
     @app.route('/properties/<prop_name>/api', methods=['POST'])

@@ -105,6 +105,24 @@ class Account:
         self.write_lock.release()
         self.tlog_connection.update_properties(self.ident, serialize_props())
 
+    def update_property_state(self):
+        """
+        Update property state in database (for building changes, mortgage, etc.)
+        Call this after any property attribute changes.
+        """
+
+        def serialize_props():
+            """
+            Turn property into JSON for saving into TLog
+            """
+            prop_names = list(map(lambda p: p.save_attributes(), self.properties))
+            return json.dumps(prop_names)
+
+        self.write_lock.acquire()
+        serialized = serialize_props()
+        self.write_lock.release()
+        self.tlog_connection.update_properties(self.ident, serialized)
+
     def withdraw(self, amount, log=True):
         self.write_lock.acquire()
         if amount > self.cash:
@@ -300,10 +318,11 @@ class AccountManager:
         self.tlog_connection.log_account_withdraw(buyer_id, property_cost)
         return info
 
-    def buy_property(self, seller_id, prop):
+    def buy_property(self, seller_id, prop, fraction=0.5):
         """
         Buy a property back from a player (return it to the bank).
-        Money is given to the seller.
+        Money is given to the seller at a fraction of the original cost.
+        Default fraction is 0.5 (50% of purchase price).
         """
         self.write_lock.acquire()
         seller_account = self.query(seller_id)
@@ -316,14 +335,80 @@ class AccountManager:
             return f'{prop.name} is not owned by {seller_id}.'
         
         property_cost = prop.costs['property']
-        seller_account.deposit(property_cost, log=False)
+        buyback_price = int(property_cost * fraction)
+        seller_account.deposit(buyback_price, log=False)
         seller_account.remove_property(prop)
-        info = f'Bank purchased {prop.name} from {seller_account.name} for ${property_cost}. New balance: ${seller_account.cash}'
+        info = f'Bank purchased {prop.name} from {seller_account.name} for ${buyback_price} ({int(fraction * 100)}% of ${property_cost}). New balance: ${seller_account.cash}'
         self.write_lock.release()
         self.tlog_connection.update_account(seller_id, seller_account.cash)
         self.server_update_signal.set()
         print('Event trigger from buy_property')
-        self.tlog_connection.log_account_deposit(seller_id, property_cost)
+        self.tlog_connection.log_account_deposit(seller_id, buyback_price)
+        return info
+
+    def mortgage_property(self, owner_id, prop):
+        """
+        Mortgage a property. Owner receives mortgage value.
+        """
+        self.write_lock.acquire()
+        owner_account = self.query(owner_id)
+        if owner_account == 'Account does not exist.':
+            self.write_lock.release()
+            return f'Account for owner ID {owner_id} does not exist.'
+        
+        if prop.owner != owner_id:
+            self.write_lock.release()
+            return f'{prop.name} is not owned by {owner_id}.'
+        
+        if prop.mortgaged:
+            self.write_lock.release()
+            return f'{prop.name} is already mortgaged.'
+        
+        mortgage_value = prop.mortgage()
+        owner_account.deposit(mortgage_value, log=False)
+        info = f'{owner_account.name} mortgaged {prop.name} for ${mortgage_value}. New balance: ${owner_account.cash}'
+        self.write_lock.release()
+        # Save property state to database
+        owner_account.update_property_state()
+        self.tlog_connection.update_account(owner_id, owner_account.cash)
+        self.server_update_signal.set()
+        print('Event trigger from mortgage_property')
+        self.tlog_connection.log_account_deposit(owner_id, mortgage_value)
+        return info
+
+    def unmortgage_property(self, owner_id, prop, interest_rate=0.10):
+        """
+        Unmortgage a property. Owner pays mortgage value + interest.
+        """
+        self.write_lock.acquire()
+        owner_account = self.query(owner_id)
+        if owner_account == 'Account does not exist.':
+            self.write_lock.release()
+            return f'Account for owner ID {owner_id} does not exist.'
+        
+        if prop.owner != owner_id:
+            self.write_lock.release()
+            return f'{prop.name} is not owned by {owner_id}.'
+        
+        if not prop.mortgaged:
+            self.write_lock.release()
+            return f'{prop.name} is not mortgaged.'
+        
+        unmortgage_cost = int(prop.mortgage_value * (1 + interest_rate))
+        if owner_account.cash < unmortgage_cost:
+            self.write_lock.release()
+            return f'{owner_account.name} does not have enough funds to unmortgage {prop.name}. Cost: ${unmortgage_cost}, Available: ${owner_account.cash}'
+        
+        owner_account.withdraw(unmortgage_cost, log=False)
+        prop.unmortgage(interest_rate)
+        info = f'{owner_account.name} unmortgaged {prop.name} for ${unmortgage_cost} (mortgage: ${prop.mortgage_value}, interest: ${unmortgage_cost - prop.mortgage_value}). New balance: ${owner_account.cash}'
+        self.write_lock.release()
+        # Save property state to database
+        owner_account.update_property_state()
+        self.tlog_connection.update_account(owner_id, owner_account.cash)
+        self.server_update_signal.set()
+        print('Event trigger from unmortgage_property')
+        self.tlog_connection.log_account_withdraw(owner_id, unmortgage_cost)
         return info
 
     def recieved_update(self):

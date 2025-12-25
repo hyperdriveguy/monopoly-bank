@@ -140,6 +140,43 @@ form.card-stylize {
     color: #d32f2f;
 }
 
+.warning-red {
+    color: red;
+}
+
+.success-green {
+    color: green;
+}
+
+.warning-orange {
+    color: orange;
+}
+
+.buyback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em;
+}
+
+.buyback-grid form,
+.building-controls form {
+    margin: 0;
+}
+
+.custom-buyback-form {
+    margin-top: 0.5em;
+}
+
+.building-controls {
+    display: flex;
+    gap: 0.5em;
+    justify-content: center;
+}
+
+.narrow-input {
+    width: 60px;
+}
+
 input {
     margin: 0.5em;
 }
