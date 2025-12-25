@@ -3,7 +3,7 @@
 {% block content %}
 <h2 {% if prop.color %}style="background-color:{{ prop.color }};color:{% if prop.color != 'darkblue' %}black{% else %}#ddd{% endif %}"{% endif %}>{{ prop.name }}</h2>
 <section class="{% if prop.mortgaged %}mortgaged{% endif %}">
-    <p>Owner: {{ prop.owner }}</p>
+    <p>Owner: {{ prop.owner if prop.owner else 'Bank' }}</p>
     {% if not prop.owner %}
         <p>Property cost: ${{ prop.costs['property'] }}</p>
     {% else %}
@@ -17,6 +17,24 @@
         <p>{{ tier }}: ${{ rate }}</p>
     {% endfor %}
 </section>
+
+{% if is_banker %}
+<section>
+    <h3>Banker Controls</h3>
+    {% if not prop.owner %}
+    <form method="post">
+        <label for="buyer-id">Sell to player:</label>
+        <input type="text" id="buyer-id" name="buyer-id" placeholder="Player ID" required>
+        <button type="submit">Sell Property</button>
+    </form>
+    {% else %}
+    <form method="post">
+        <input type="hidden" name="action" value="buy-back">
+        <button type="submit">Buy Back Property (${{ prop.costs['property'] }})</button>
+    </form>
+    {% endif %}
+</section>
+{% endif %}
 {% endblock content %}
 {% block scripts %}
 {% endblock %}

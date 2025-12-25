@@ -79,7 +79,29 @@ class Account:
         self.write_lock.acquire()
         prop.owner = self.ident
         self.properties.add(prop)
-        self.prop_manager.update_color_set_rent(prop.color)
+        if prop.color:
+            self.prop_manager.update_color_set_rent(prop.color)
+        self.write_lock.release()
+        self.tlog_connection.update_properties(self.ident, serialize_props())
+
+    def remove_property(self, prop):
+        """
+        Remove a property from the user and log it.
+        """
+
+        def serialize_props():
+            """
+            Turn property into JSON for saving into TLog
+            """
+            prop_names = list(map(lambda p: p.save_attributes(), self.properties))
+            return json.dumps(prop_names)
+
+        self.write_lock.acquire()
+        if prop in self.properties:
+            self.properties.remove(prop)
+            prop.owner = None
+            if prop.color:
+                self.prop_manager.update_color_set_rent(prop.color)
         self.write_lock.release()
         self.tlog_connection.update_properties(self.ident, serialize_props())
 
@@ -246,6 +268,62 @@ class AccountManager:
         self.server_update_signal.set()
         print('Event trigger from transfer')
         self.tlog_connection.log_account_transfer(payer, payee, info)
+        return info
+
+    def sell_property(self, buyer_id, prop):
+        """
+        Sell an unowned property to a player.
+        Money is withdrawn from the buyer's account but doesn't go to the banker.
+        """
+        self.write_lock.acquire()
+        buyer_account = self.query(buyer_id)
+        if buyer_account == 'Account does not exist.':
+            self.write_lock.release()
+            return f'Account for buyer ID {buyer_id} does not exist.'
+        
+        property_cost = prop.costs['property']
+        if buyer_account.cash < property_cost:
+            self.write_lock.release()
+            return f'{buyer_account.name} does not have enough funds to purchase {prop.name}. Cost: ${property_cost}, Available: ${buyer_account.cash}'
+        
+        if prop.owner is not None:
+            self.write_lock.release()
+            return f'{prop.name} is already owned by {prop.owner}.'
+        
+        buyer_account.withdraw(property_cost, log=False)
+        buyer_account.add_property(prop)
+        info = f'{buyer_account.name} purchased {prop.name} for ${property_cost}. Remaining balance: ${buyer_account.cash}'
+        self.write_lock.release()
+        self.tlog_connection.update_account(buyer_id, buyer_account.cash)
+        self.server_update_signal.set()
+        print('Event trigger from sell_property')
+        self.tlog_connection.log_account_withdraw(buyer_id, property_cost)
+        return info
+
+    def buy_property(self, seller_id, prop):
+        """
+        Buy a property back from a player (return it to the bank).
+        Money is given to the seller.
+        """
+        self.write_lock.acquire()
+        seller_account = self.query(seller_id)
+        if seller_account == 'Account does not exist.':
+            self.write_lock.release()
+            return f'Account for seller ID {seller_id} does not exist.'
+        
+        if prop.owner != seller_id:
+            self.write_lock.release()
+            return f'{prop.name} is not owned by {seller_id}.'
+        
+        property_cost = prop.costs['property']
+        seller_account.deposit(property_cost, log=False)
+        seller_account.remove_property(prop)
+        info = f'Bank purchased {prop.name} from {seller_account.name} for ${property_cost}. New balance: ${seller_account.cash}'
+        self.write_lock.release()
+        self.tlog_connection.update_account(seller_id, seller_account.cash)
+        self.server_update_signal.set()
+        print('Event trigger from buy_property')
+        self.tlog_connection.log_account_deposit(seller_id, property_cost)
         return info
 
     def recieved_update(self):

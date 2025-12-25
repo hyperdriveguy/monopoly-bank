@@ -264,9 +264,29 @@ if __name__ == '__main__':
         return render_generic('properties.html.jinja', property_list=managed_props.all_properties)
 
 
-    @app.route('/properties/<prop_name>')
+    @app.route('/properties/<prop_name>', methods=['GET', 'POST'])
     def individual_property_page(prop_name):
-        return render_generic('individual_property.html.jinja', prop=managed_props.properties[prop_name])
+        prop = managed_props.properties[prop_name]
+        
+        # Handle POST requests (banker operations)
+        if request.method == 'POST':
+            if current_user.is_anonymous or not current_user.banker:
+                abort(403)
+            
+            # Sell property to player
+            if 'buyer-id' in request.form:
+                buyer_id = request.form['buyer-id']
+                result = managed_accs.sell_property(buyer_id, prop)
+                flash(result)
+            # Buy back property from player
+            elif 'action' in request.form and request.form['action'] == 'buy-back':
+                if prop.owner:
+                    result = managed_accs.buy_property(prop.owner, prop)
+                    flash(result)
+                else:
+                    flash('Property is not owned by anyone.')
+        
+        return render_generic('individual_property.html.jinja', prop=prop)
 
 
     @app.route('/properties/<prop_name>/api', methods=['POST'])
