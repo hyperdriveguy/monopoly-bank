@@ -171,7 +171,7 @@ if __name__ == '__main__':
                 # Banker can update minimum credit score
                 elif 'min-credit-score' in request.form:
                     managed_loans.min_credit_score = int(request.form['min-credit-score'])
-                    flash(f'Minimum credit score updated to ${managed_loans.min_credit_score}')
+                    flash(f'Minimum credit score updated to {managed_loans.min_credit_score}')
                 # Banker can update maximum loan amount
                 elif 'max-loan-amount' in request.form:
                     managed_loans.max_loan_amount = int(request.form['max-loan-amount'])
@@ -185,23 +185,40 @@ if __name__ == '__main__':
                     from loan_store import Loan
                     Loan._current_turn = game_state['current_turn']
                     
-                    # Apply late fees to overdue loans
-                    late_fees_charged = managed_loans.apply_late_fees_all()
+                    # Apply late fees to overdue loans and check for auto-defaults
+                    late_fees_charged, auto_defaulted = managed_loans.apply_late_fees_all()
+                    
+                    messages = []
                     if late_fees_charged:
                         fee_messages = [f"{borrower}: ${amount}" for borrower, amount in late_fees_charged.items()]
-                        flash(f'Turn incremented to {game_state["current_turn"]}. Late fees applied: {", ".join(fee_messages)}')
+                        messages.append(f'Late fees applied: {", ".join(fee_messages)}')
+                    
+                    if auto_defaulted:
+                        for loan_id in auto_defaulted:
+                            loan = managed_loans.get_loan(loan_id)
+                            if loan:
+                                messages.append(f'⚠️ LOAN DEFAULTED: {loan.borrower_id} loan #{loan_id} (2+ missed payments)')
+                    
+                    turn_msg = f'Turn incremented to {game_state["current_turn"]}'
+                    if messages:
+                        flash(f'{turn_msg}. {" | ".join(messages)}', 'warning' if auto_defaulted else 'info')
                     else:
-                        flash(f'Turn incremented to {game_state["current_turn"]}')
+                        flash(turn_msg)
                 # Banker can update compounding interval
                 elif 'compounding-interval' in request.form:
                     managed_loans.compounding_interval_turns = int(request.form['compounding-interval'])
                     flash(f'Compounding interval updated to every {managed_loans.compounding_interval_turns} turns')
+                # Banker can update default payment interval
+                elif 'default-payment-interval' in request.form:
+                    managed_loans.default_payment_interval_turns = int(request.form['default-payment-interval'])
+                    flash(f'Default payment interval updated to every {managed_loans.default_payment_interval_turns} turns')
         return render_generic('home.html.jinja', 
                             mortgage_interest_rate=mortgage_interest_rate['value'],
                             loan_interest_rate=managed_loans.loan_interest_rate,
                             min_credit_score=managed_loans.min_credit_score,
                             max_loan_amount=managed_loans.max_loan_amount,
-                            compounding_interval_turns=managed_loans.compounding_interval_turns)
+                            compounding_interval_turns=managed_loans.compounding_interval_turns,
+                            default_payment_interval=managed_loans.default_payment_interval_turns)
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -308,8 +325,21 @@ if __name__ == '__main__':
 
         # Get loans for this account
         account_loans = managed_loans.get_loans_by_borrower(ident)
+        
+        # Generate credit info if banker
+        credit_info = None
+        if not current_user.is_anonymous and current_user.banker:
+            from loan_store import Loan
+            Loan._current_turn = game_state['current_turn']
+            report = managed_loans.generate_credit_report(ident, game_state['current_turn'])
+            if report:
+                credit_info = {
+                    'score': report.credit_score,
+                    'rating': report.rating.value,
+                    'rating_class': report.rating.value.lower().replace(' ', '-')
+                }
 
-        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log, loans=account_loans)
+        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log, loans=account_loans, credit_info=credit_info)
 
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
@@ -462,11 +492,61 @@ if __name__ == '__main__':
         return {'property': managed_props.properties[prop_name].json, 'request': request.json, 'user': user_name}
 
 
-    # TODO: Finish pages
-    @app.route('/investments')
+    # Help page - Credit system documentation
     @app.route('/help')
-    def placeholder_page():
-        return render_generic('sidebar.html.jinja')
+    def help_page():
+        return render_generic('help.html.jinja')
+
+    # Credit report page
+    @app.route('/credit-report/<ident>')
+    def credit_report_page(ident):
+        """
+        Display credit report for a player.
+        Bankers can view any account's report.
+        Players can only view their own.
+        """
+        if current_user.is_anonymous:
+            abort(403)
+        
+        ident = urlify(ident, reverse=True)
+        target_account = managed_accs.query(ident)
+        
+        if target_account == 'Account does not exist.':
+            return render_generic('no_existing_account.html.jinja', id=ident) if current_user.banker else abort(404)
+        
+        # Permission check
+        if not current_user.banker and current_user.ident != ident:
+            abort(403)
+        
+        # Generate credit report
+        from loan_store import Loan
+        Loan._current_turn = game_state['current_turn']
+        
+        report = managed_loans.generate_credit_report(ident, game_state['current_turn'])
+        if report is None:
+            flash('Could not generate credit report.')
+            return redirect(url_for('individual_account_page', ident=request.form.get('back_to', ident)))
+        
+        summary = managed_loans.get_borrower_credit_summary(ident, game_state['current_turn'])
+        
+        return render_generic('credit_report.html.jinja',
+            player_name=target_account.name,
+            credit_score=report.credit_score,
+            rating=report.rating.value,
+            rating_class=report.rating.value.lower().replace(' ', '-'),
+            positive_factors=report.positive_factors,
+            risk_factors=report.risk_factors,
+            total_assets=summary['total_assets'],
+            available_cash=summary['available_cash'],
+            property_value=summary['property_value'],
+            total_active_debt=summary['total_active_debt'],
+            debt_to_assets_ratio=summary['debt_to_assets_ratio'],
+            liquidity_ratio=summary['available_cash'] / summary['total_assets'] if summary['total_assets'] > 0 else 0,
+            utilization_ratio=summary['total_active_debt'] / (summary['total_assets'] * 0.75) if summary['total_assets'] > 0 else 0,
+            max_borrowing=summary['total_assets'],
+            active_loans_count=summary['active_loans_count'],
+            payment_history=report.payment_history
+        )
 
 
     @app.route('/loans/')
@@ -564,6 +644,8 @@ if __name__ == '__main__':
         
         if not current_user.is_anonymous:
             has_defaulted_loans = managed_loans.has_defaulted_loans(current_user.ident)
+            interest_multiplier = 1.0  # Default
+            adjusted_interest_rate = managed_loans.loan_interest_rate
             
             if current_user.banker:
                 # Bankers can borrow up to the system maximum (they can bypass credit checks)
@@ -572,7 +654,7 @@ if __name__ == '__main__':
                 reason = "Banker - can bypass credit checks"
             elif not has_defaulted_loans:
                 # Regular players are subject to credit checks
-                eligible, reason, max_amount = managed_loans.check_loan_eligibility(
+                eligible, reason, max_amount, interest_multiplier = managed_loans.check_loan_eligibility(
                     current_user.ident
                 )
             
@@ -580,11 +662,13 @@ if __name__ == '__main__':
             if eligible and max_amount > 0:
                 # Create a temporary loan to calculate typical payment
                 from loan_store import Loan, LoanStatus
+                # Use adjusted interest rate based on credit rating
+                adjusted_interest_rate = managed_loans.loan_interest_rate * interest_multiplier
                 temp_loan = Loan(
                     loan_id="temp",
                     borrower_id=current_user.ident,
                     principal=max_amount,
-                    interest_rate=managed_loans.loan_interest_rate,
+                    interest_rate=adjusted_interest_rate,
                     payment_interval_turns=managed_loans.default_payment_interval_turns,
                     created_at_turn=game_state['current_turn'],
                     status=LoanStatus.ACTIVE,
@@ -599,10 +683,11 @@ if __name__ == '__main__':
                             reason=reason,
                             max_amount=max_amount,
                             has_defaulted_loans=has_defaulted_loans,
-                            loan_interest_rate=managed_loans.loan_interest_rate,
+                            loan_interest_rate=adjusted_interest_rate,
                             default_interval=managed_loans.default_payment_interval_turns,
                             default_loan_term=3,
-                            typical_payment=typical_payment)
+                            typical_payment=typical_payment,
+                            min_credit_score=managed_loans.min_credit_score)
 
 
     @app.route('/loans/<loan_id>', methods=['GET', 'POST'])

@@ -41,6 +41,20 @@
     <button id="transfer">Do Transfer</button>
     {% endif %}
 </div>
+
+<!-- Credit Report Section (Banker Only) -->
+{% if credit_info %}
+<div style="background-color: #e8f5e9; border: 2px solid #4caf50; padding: 1em; margin: 1.5em 0; border-radius: 4px;">
+    <h3 style="color: #2e7d32; margin-top: 0;">Credit Report</h3>
+    <p><strong>Credit Score:</strong> <span style="font-size: 1.5em; color: #4caf50;">{{ credit_info.score }}</span></p>
+    <p><strong>Rating:</strong> 
+        <span style="display: inline-block; padding: 4px 12px; border-radius: 4px; 
+                     background-color: {% if credit_info.rating == 'Excellent' %}#4caf50{% elif credit_info.rating == 'Good' %}#8bc34a{% elif credit_info.rating == 'Fair' %}#ff9800{% elif credit_info.rating == 'Poor' %}#ff5722{% else %}#d32f2f{% endif %};
+                     color: white;">{{ credit_info.rating }}</span>
+    </p>
+    <a href="{{ url_for('credit_report_page', ident=acc.ident) }}" style="display: inline-block; padding: 8px 16px; background-color: #4caf50; color: white; text-decoration: none; border-radius: 4px; margin-top: 0.5em; cursor: pointer;">View Full Report</a>
+</div>
+{% endif %}
 <div id="account-forms" class="wide-forms">
     <form action="" method="post" id="withdraw-form" class="card-stylize hidden">
         <h3>Withdraw</h3>
@@ -106,21 +120,88 @@
 <h3>Loans</h3>
 <section class="account-list">
     {% if loans %}
-        {% for loan in loans %}
-        <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable {% if loan.is_overdue %}overdue{% endif %}">
-            <article>
-                <h3>Loan #{{ loan.loan_id }}</h3>
-                <p>Status: {{ loan.status.value.upper() }}</p>
-                {% if loan.is_overdue %}
-                <p style="color: red;"><strong>⚠ OVERDUE</strong></p>
-                {% endif %}
-                <p>Balance: ${{ loan.remaining_balance }} / ${{ loan.total_owed }}</p>
-                {% if loan.status.value == 'active' %}
-                <p>Minimum Payment: ${{ loan.minimum_payment }}</p>
-                {% endif %}
-            </article>
-        </a>
-        {% endfor %}
+        {% set defaulted_loans = loans|selectattr('status.value', 'equalto', 'defaulted')|list %}
+        {% set active_loans = loans|selectattr('status.value', 'equalto', 'active')|list %}
+        {% set resolved_loans = loans|selectattr('status.value', 'equalto', 'resolved')|list %}
+        {% set paid_off_loans = loans|selectattr('status.value', 'equalto', 'paid_off')|list %}
+        
+        {% if defaulted_loans %}
+        <div style="grid-column: 1 / -1; margin-bottom: 1.5em;">
+            <h4 style="color: #d32f2f; margin-top: 0;">Defaulted Loans ({{ defaulted_loans|length }})</h4>
+            <div class="account-list" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                {% for loan in defaulted_loans %}
+                <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable" style="border: 2px solid #d32f2f;">
+                    <article>
+                        <h3 style="background-color: #d32f2f; color: white;">Loan #{{ loan.loan_id }}</h3>
+                        <p><strong>Status:</strong> DEFAULTED</p>
+                        <p>Principal: ${{ loan.principal }}</p>
+                        <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                        <p style="color: #d32f2f;"><strong>Balance: ${{ loan.remaining_balance }}</strong></p>
+                    </article>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if active_loans %}
+        <div style="grid-column: 1 / -1; margin-bottom: 1.5em;">
+            <h4 style="color: #1976d2; margin-top: 0;">Active Loans ({{ active_loans|length }})</h4>
+            <div class="account-list" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                {% for loan in active_loans %}
+                <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable {% if loan.is_overdue %}overdue{% endif %}">
+                    <article>
+                        <h3 {% if loan.is_overdue %}style="background-color: #ff9800; color: white;"{% endif %}>Loan #{{ loan.loan_id }}</h3>
+                        <p><strong>Status:</strong> ACTIVE</p>
+                        {% if loan.is_overdue %}
+                        <p style="color: #ff9800;"><strong>⚠ OVERDUE</strong></p>
+                        {% endif %}
+                        <p>Principal: ${{ loan.principal }}</p>
+                        <p>Interest: {{ (loan.interest_rate * 100)|int }}%</p>
+                        <p>Balance: ${{ loan.remaining_balance }} / ${{ loan.total_owed }}</p>
+                        <p><small>Min Payment: ${{ loan.minimum_payment }}</small></p>
+                    </article>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if resolved_loans %}
+        <div style="grid-column: 1 / -1; margin-bottom: 1.5em;">
+            <h4 style="color: #9c27b0; margin-top: 0;">Resolved Defaults ({{ resolved_loans|length }})</h4>
+            <div class="account-list" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                {% for loan in resolved_loans %}
+                <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable">
+                    <article>
+                        <h3 style="background-color: #9c27b0; color: white;">Loan #{{ loan.loan_id }}</h3>
+                        <p><strong>Status:</strong> RESOLVED</p>
+                        <p>Principal: ${{ loan.principal }}</p>
+                        <p>Paid: ${{ loan.amount_paid }} / ${{ loan.total_owed }}</p>
+                    </article>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if paid_off_loans %}
+        <div style="grid-column: 1 / -1; margin-bottom: 1.5em;">
+            <h4 style="color: #4caf50; margin-top: 0;">Paid Off ({{ paid_off_loans|length }})</h4>
+            <div class="account-list" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                {% for loan in paid_off_loans %}
+                <a href="{{ url_for('individual_loan_page', loan_id=loan.loan_id) }}" class="card-stylize clickable">
+                    <article>
+                        <h3 style="background-color: #4caf50; color: white;">Loan #{{ loan.loan_id }}</h3>
+                        <p><strong>Status:</strong> PAID OFF ✓</p>
+                        <p>Principal: ${{ loan.principal }}</p>
+                        <p>Total Paid: ${{ loan.amount_paid }}</p>
+                    </article>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     {% else %}
         <p>No loans. <a href="{{ url_for('loan_application') }}">Apply for a loan</a></p>
     {% endif %}

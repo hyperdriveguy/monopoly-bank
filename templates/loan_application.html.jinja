@@ -30,13 +30,21 @@
 </div>
 {% else %}
 <div class="card-stylize" style="background-color: #ffebee; border: 2px solid red;">
-    <h3>✗ Credit Denied</h3>
+    <h3>✗ Credit Denied (Automatic Approval)</h3>
     <p>{{ reason }}</p>
+    <hr>
+    <p><strong>💡 Note:</strong> Loans are automatically approved for credit scores of {{ min_credit_score }} and higher. Your score is below {{ min_credit_score }}, so automatic approval is not available.</p>
+    <p>However, the banker can still manually approve loans at their discretion. Contact your banker to discuss options.</p>
 </div>
 {% endif %}
 
 <form action="" method="post" class="card-stylize">
     <h3>Loan Application</h3>
+    
+    <div class="card-stylize" style="background-color: #e3f2fd; border: 2px solid #2196F3; padding: 1em; margin-bottom: 1.5em;">
+        <strong>ℹ️ Credit Score Requirement</strong>
+        <p>Automatic loan approval requires a credit score of <strong>{{ min_credit_score }} or higher</strong>. If your score is below {{ min_credit_score }}, the banker can still manually approve loans at their discretion.</p>
+    </div>
     
     {% if is_banker %}
     <div class="label-align">

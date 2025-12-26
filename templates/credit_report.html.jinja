@@ -1,0 +1,218 @@
+{% extends "sidebar.html.jinja" %}
+
+{% block title %}Credit Report - {{ player_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2>Credit Report: {{ player_name }}</h2>
+                    <small>Generated on Turn {{ current_turn }}</small>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Credit Score -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-2">{{ credit_score }}/850</h3>
+                                <h5 class="badge badge-{{ rating_class }} p-2">{{ rating }}</h5>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <h5>Scoring Components (Weighted):</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" style="width: 22%;" title="Assets (22%)">22%</div>
+                                <div class="progress-bar bg-success" style="width: 30%;" title="Payment History (30%)">30%</div>
+                                <div class="progress-bar bg-info" style="width: 18%;" title="Debt Ratio (18%)">18%</div>
+                                <div class="progress-bar bg-warning" style="width: 12%;" title="Utilization (12%)">12%</div>
+                                <div class="progress-bar bg-danger" style="width: 10%;" title="Stability (10%)">10%</div>
+                                <div class="progress-bar bg-secondary" style="width: 8%;" title="Liquidity (8%)">8%</div>
+                            </div>
+                            <div class="scoring-legend mt-2">
+                                <small><span class="badge" style="background-color: #007bff;">Assets</span></small>
+                                <small><span class="badge badge-success">Payment History</span></small>
+                                <small><span class="badge badge-info">Debt Ratio</span></small>
+                                <small><span class="badge badge-warning" style="color: #333;">Utilization</span></small>
+                                <small><span class="badge badge-danger">Stability</span></small>
+                                <small><span class="badge badge-secondary">Liquidity</span></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Financial Snapshot -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Financial Status</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Total Assets</strong></td>
+                                    <td class="text-right">${{ total_assets | default(0) | int }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Liquid Cash</strong></td>
+                                    <td class="text-right text-success">${{ available_cash | default(0) | int }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Property Value</strong></td>
+                                    <td class="text-right">${{ property_value | default(0) | int }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Active Debt</strong></td>
+                                    <td class="text-right text-danger">${{ total_active_debt | default(0) | int }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Debt-to-Assets</strong></td>
+                                    <td class="text-right">{{ "%.1f"|format(debt_to_assets_ratio * 100) }}%</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Key Metrics</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Liquidity Ratio</strong></td>
+                                    <td class="text-right">
+                                        {% if liquidity_ratio >= 0.5 %}
+                                        <span class="badge badge-success">{{ "%.1f"|format(liquidity_ratio * 100) }}%</span>
+                                        {% elif liquidity_ratio >= 0.3 %}
+                                        <span class="badge badge-info">{{ "%.1f"|format(liquidity_ratio * 100) }}%</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">{{ "%.1f"|format(liquidity_ratio * 100) }}%</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Credit Utilization</strong></td>
+                                    <td class="text-right">
+                                        {% if utilization_ratio <= 0.3 %}
+                                        <span class="badge badge-success">{{ "%.1f"|format(utilization_ratio * 100) }}%</span>
+                                        {% elif utilization_ratio <= 0.5 %}
+                                        <span class="badge badge-info">{{ "%.1f"|format(utilization_ratio * 100) }}%</span>
+                                        {% else %}
+                                        <span class="badge badge-danger">{{ "%.1f"|format(utilization_ratio * 100) }}%</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Max Borrowing</strong></td>
+                                    <td class="text-right">${{ max_borrowing | default(0) | int }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Active Loans</strong></td>
+                                    <td class="text-right">{{ active_loans_count }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Positive Factors -->
+                    {% if positive_factors %}
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h5><span class="badge badge-success">✓</span> Positive Factors</h5>
+                            <div class="credit-factors-list">
+                                {% for factor in positive_factors %}
+                                <div class="credit-factor-item credit-factor-positive">✓ {{ factor }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Risk Factors -->
+                    {% if risk_factors %}
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h5><span class="badge badge-danger">✗</span> Risk Factors</h5>
+                            <div class="credit-factors-list">
+                                {% for factor in risk_factors %}
+                                <div class="credit-factor-item credit-factor-risk">✗ {{ factor }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Payment History -->
+                    {% if payment_history %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>Payment History</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Total Payments</strong></td>
+                                            <td>{{ payment_history.total_payments_made }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>On-Time Payments</strong></td>
+                                            <td><span class="badge badge-success">{{ payment_history.on_time_payments }} ({{ "%.1f"|format(payment_history.payment_success_rate * 100) }}%)</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Late Payments</strong></td>
+                                            <td>
+                                                {% if payment_history.late_payments > 0 %}
+                                                <span class="badge badge-danger">{{ payment_history.late_payments }}</span>
+                                                {% else %}
+                                                <span class="badge badge-success">{{ payment_history.late_payments }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Consecutive On-Time</strong></td>
+                                            <td><span class="badge badge-info">{{ payment_history.consecutive_on_time_payments }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total Loans Created</strong></td>
+                                            <td>{{ payment_history.total_loans_created }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Loans Paid Off</strong></td>
+                                            <td><span class="badge badge-success">{{ payment_history.total_loans_paid_off }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Defaults</strong></td>
+                                            <td>
+                                                {% if payment_history.total_loans_defaulted > 0 %}
+                                                <span class="badge badge-danger">{{ payment_history.total_loans_defaulted }}</span>
+                                                {% else %}
+                                                <span class="badge badge-success">{{ payment_history.total_loans_defaulted }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer text-muted">
+                    <small>Report generated turn {{ current_turn }}. Credit scores reflect real-time financial status.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mt-3">
+        <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+        {% if is_banker %}
+        <a href="{{ url_for('accounts_main_page') }}" class="btn btn-primary">View All Accounts</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -34,11 +34,11 @@
     <p>Current loan rate: {{ (loan_interest_rate * 100)|int }}%</p>
     
     <form method="post">
-        <label for="min-credit-score">Minimum Credit Score ($):</label>
+        <label for="min-credit-score">Minimum Credit Score:</label>
         <input type="number" id="min-credit-score" name="min-credit-score" min="0" step="1" value="{{ min_credit_score }}" style="width: 100px;" required>
         <button type="submit">Update</button>
     </form>
-    <p>Current minimum: ${{ min_credit_score }}</p>
+    <p>Current minimum: {{ min_credit_score }}</p>
     
     <form method="post">
         <label for="max-loan-amount">Maximum Loan Amount ($):</label>
@@ -53,6 +53,13 @@
         <button type="submit">Update</button>
     </form>
     <p>Interest compounds every {{ compounding_interval_turns }} turns (during payment period)</p>
+    
+    <form method="post">
+        <label for="default-payment-interval">Default Payment Interval (turns):</label>
+        <input type="number" id="default-payment-interval" name="default-payment-interval" min="1" step="1" value="{{ default_payment_interval }}" style="width: 100px;" required>
+        <button type="submit">Update</button>
+    </form>
+    <p>New loans have payments due every {{ default_payment_interval }} turns (unless customized)</p>
 </section>
 {% endif %}
 

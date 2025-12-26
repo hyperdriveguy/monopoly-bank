@@ -85,6 +85,23 @@ class TransactionLog:
                 value INTEGER)
             """
         )
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS PaymentRecords(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                loan_id TEXT,
+                account_id TEXT,
+                amount_paid REAL,
+                amount_owed REAL,
+                payment_date_turn INTEGER,
+                due_date_turn INTEGER,
+                on_time BOOLEAN,
+                late_by_turns INTEGER,
+                loan_amount REAL,
+                interest_rate REAL,
+                FOREIGN KEY (loan_id) REFERENCES Loans(loan_id),
+                FOREIGN KEY (account_id) REFERENCES Accounts(id))
+            """
+        )
         while True:
             try:
                 next_command = self.exec_queue.get()
@@ -373,8 +390,35 @@ class TransactionLog:
             (key, value)
         ))
 
+    # Payment Record methods
+    def save_payment_record(self, loan_id, account_id, amount_paid, amount_owed, 
+                           payment_date_turn, due_date_turn, on_time, late_by_turns, 
+                           loan_amount, interest_rate):
+        """Save a payment record to the database."""
+        self.exec_queue.put((
+            True,
+            "INSERT INTO PaymentRecords (loan_id, account_id, amount_paid, amount_owed, payment_date_turn, due_date_turn, on_time, late_by_turns, loan_amount, interest_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (loan_id, account_id, amount_paid, amount_owed, payment_date_turn, due_date_turn, on_time, late_by_turns, loan_amount, interest_rate)
+        ))
 
-    def log_loan_erased(self, loan_id, borrower_id, amount):
+    def get_payment_records_for_account(self, account_id):
+        """Retrieve all payment records for an account."""
+        self.exec_queue.put((
+            False,
+            "SELECT loan_id, amount_paid, amount_owed, payment_date_turn, due_date_turn, on_time, late_by_turns, loan_amount, interest_rate FROM PaymentRecords WHERE account_id=? ORDER BY payment_date_turn",
+            (account_id,)
+        ))
+        return self.receive_data.get()
+
+    def delete_payment_records_for_account(self, account_id):
+        """Delete all payment records for an account (used when rebuilding)."""
+        self.exec_queue.put((
+            True,
+            "DELETE FROM PaymentRecords WHERE account_id=?",
+            (account_id,)
+        ))
+
+
         trans_type = 'Loan Erased'
         info = f'Loan ID: {loan_id} - ERASED, Forgave: ${amount}'
         self._send_transaction_to_listener(trans_type, borrower_id, info)

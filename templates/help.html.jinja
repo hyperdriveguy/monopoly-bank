@@ -1,0 +1,523 @@
+{% extends "sidebar.html.jinja" %}
+
+{% block title %}Help & Game Guide{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="list-group sticky-top" style="top: 20px;">
+                <a href="#basics" class="list-group-item list-group-item-action">Game Basics</a>
+                <a href="#turns" class="list-group-item list-group-item-action">Turn System</a>
+                <a href="#loans" class="list-group-item list-group-item-action">Taking Loans</a>
+                <a href="#credit" class="list-group-item list-group-item-action">Credit Scores</a>
+                <a href="#properties" class="list-group-item list-group-item-action">Properties & Auctions</a>
+                <a href="#faq" class="list-group-item list-group-item-action">FAQ</a>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <!-- Game Basics -->
+            <section id="basics" class="mb-5">
+                <h2>Welcome to Monopoly Bank</h2>
+                <p>This is a financial simulation game built on Monopoly. Players manage accounts, take out loans, buy properties, and manage auctions—all while building credit scores. The banker controls game flow and interest rates.</p>
+                
+                <h5>What You Can Do:</h5>
+                <ul>
+                    <li><strong>Manage Cash:</strong> View your account balance, deposit/withdraw funds</li>
+                    <li><strong>Buy Properties:</strong> Purchase properties from the bank or other players</li>
+                    <li><strong>Take Loans:</strong> Borrow money at competitive rates based on your creditworthiness</li>
+                    <li><strong>Make Payments:</strong> Pay loan installments on time to build your credit</li>
+                    <li><strong>Build Improvements:</strong> Add houses and hotels to your properties to increase rent</li>
+                    <li><strong>Mortgage Properties:</strong> Use properties as collateral for short-term cash</li>
+                    <li><strong>Sell & Auction:</strong> Put properties up for auction to raise cash</li>
+                    <li><strong>Check Your Credit:</strong> View your credit report and score (bankers can see all reports)</li>
+                </ul>
+            </section>
+
+            <!-- Turn System -->
+            <section id="turns" class="mb-5">
+                <h2>Understanding the Turn System</h2>
+                <p>This game uses a <strong>turn-based system</strong> for loan payments and game progression. The banker increments the turn counter to advance the game.</p>
+                
+                <h5>How Turns Work:</h5>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p><strong>Current Turn:</strong> Visible on the home page. All players can see what turn it is.</p>
+                        <p><strong>Loan Payment Intervals:</strong> When you take a loan, payments are due every N <strong>turns</strong>. For example, a 3-turn interval means you owe payment every 3 turns.</p>
+                        <p><strong>Your Payment Schedule:</strong> Each loan shows "Next Payment Due: Turn X". You must pay <strong>by that turn</strong> to avoid penalties.</p>
+                        <p><strong>Late Penalties:</strong> If you don't pay by the due turn, your loan becomes overdue. You'll accumulate $25 in late fees per turn and damage your credit score.</p>
+                        <p><strong>Auto-Default:</strong> If you miss 2+ payment periods, your loan automatically defaults. This severely damages your credit.</p>
+                    </div>
+                </div>
+
+                <h5>Example Timeline:</h5>
+                <ul>
+                    <li><strong>Turn 5:</strong> You borrow $500 with a 3-turn payment interval</li>
+                    <li><strong>Turn 5:</strong> Your next payment is due Turn 8</li>
+                    <li><strong>Turn 8:</strong> Make a payment (no penalty if you pay exactly on this turn)</li>
+                    <li><strong>Turn 9:</strong> If you haven't paid, loan becomes overdue. You accrue $25 late fees.</li>
+                    <li><strong>Turn 10:</strong> Overdue continues. Late fees add up. Credit score takes damage.</li>
+                    <li><strong>Turn 12:</strong> You've missed 2 payment periods → Loan auto-defaults!</li>
+                    <li><strong>Turn 13:</strong> You finally pay. Defaulted loan still damages your credit.</li>
+                </ul>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ Banker Controls Game Speed:</strong> The banker increments the turn counter on the home page. Coordinate with your banker about when turns will advance so you can make payments on time!
+                </div>
+            </section>
+
+            <!-- Loans -->
+            <section id="loans" class="mb-5">
+                <h2>Taking & Paying Loans</h2>
+                
+                <h5>Applying for a Loan</h5>
+                <p>Go to <strong>Loans → Apply for Loan</strong> and enter the amount you want to borrow.</p>
+                <ul>
+                    <li><strong>Your Eligibility:</strong> Your credit score determines if you can borrow and how much. See your credit report if you're denied.</li>
+                    <li><strong>Interest Rate:</strong> The base interest rate is set by the banker. Your actual rate depends on your credit rating (see below).</li>
+                    <li><strong>Loan Terms:</strong> Payment interval (how often you pay) is usually every 3 turns, but the banker can customize this.</li>
+                    <li><strong>Typical Payment:</strong> You'll see an estimated payment amount before you apply.</li>
+                </ul>
+
+                <h5>Making Payments</h5>
+                <p>View your loans in the <strong>Loans</strong> page. On each loan, you can:</p>
+                <ul>
+                    <li><strong>Make a Payment:</strong> Pay any amount toward the loan balance.</li>
+                    <li><strong>View Details:</strong> See your interest rate, remaining balance, when payment is due, and total paid.</li>
+                    <li><strong>Check Status:</strong> Loans show if they're ACTIVE, OVERDUE, PAID OFF, or DEFAULTED.</li>
+                </ul>
+
+                <div class="alert alert-info">
+                    <strong>💡 Tip:</strong> Pay on time or early to avoid late fees and protect your credit score. Late payments can prevent you from getting future loans.
+                </div>
+
+                <h5>Interest Types</h5>
+                <p>Loans can use <strong>compound interest</strong> (default) or <strong>simple interest</strong> (if the banker sets it):</p>
+                <ul>
+                    <li><strong>Compound Interest:</strong> Interest is calculated and added to your balance periodically. You pay interest on interest.</li>
+                    <li><strong>Simple Interest:</strong> Interest is fixed and doesn't compound. Easier to predict.</li>
+                </ul>
+            </section>
+
+            <!-- Credit Scores -->
+            <section id="credit" class="mb-5">
+                <h2>Credit Scores & Ratings</h2>
+                <p>Your credit score reflects your financial trustworthiness. It ranges from <strong>300 to 850</strong> and affects your ability to borrow money at good rates.</p>
+
+                <h5>Credit Ratings</h5>
+                <div class="card mb-3">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Score Range</th>
+                                    <th>Rating</th>
+                                    <th>Max You Can Borrow</th>
+                                    <th>Your Interest Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="table-success">
+                                    <td>750-850</td>
+                                    <td><strong>Excellent</strong></td>
+                                    <td>120% of your assets</td>
+                                    <td>12% (20% discount)</td>
+                                </tr>
+                                <tr class="table-info">
+                                    <td>700-749</td>
+                                    <td><strong>Very Good</strong></td>
+                                    <td>110% of your assets</td>
+                                    <td>13.5% (10% discount)</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td>620-699</td>
+                                    <td><strong>Good</strong></td>
+                                    <td>100% of your assets</td>
+                                    <td>15% (standard rate)</td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td>545-619</td>
+                                    <td><strong>Fair</strong></td>
+                                    <td>75% of your assets</td>
+                                    <td>15% (standard rate)</td>
+                                </tr>
+                                <tr class="table-danger">
+                                    <td>500-544</td>
+                                    <td><strong>Poor</strong></td>
+                                    <td>50% of your assets</td>
+                                    <td>18.75% (25% penalty)</td>
+                                </tr>
+                                <tr style="background-color: #ffcccc;">
+                                    <td>&lt;500</td>
+                                    <td><strong>Very Poor</strong></td>
+                                    <td>25% of your assets</td>
+                                    <td>22.5% (50% penalty)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <h5>What Affects Your Score</h5>
+                <p>Your credit score is calculated from these factors:</p>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Payment History (30%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>Do you pay loans on time? Late payments hurt. Defaults hurt more. Paid-off loans help.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Your Assets (28%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>Total cash + property value. More assets = higher score.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Debt-to-Assets Ratio (20%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>How much you owe vs. what you own. Lower is better. More than 100% debt damages your score.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Credit Utilization (8%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>Percentage of your available credit you're using. Staying under 30% is ideal.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Stability (8%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>Consistent payment patterns, recent activity, loans paid off successfully.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong>Liquidity (6%)</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>Percentage of assets in cash (vs. properties). 50%+ cash is ideal.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5>View Your Credit Report</h5>
+                <p>Click <strong>Account → View Credit Report</strong> to see:</p>
+                <ul>
+                    <li>Your current credit score and rating</li>
+                    <li>Positive factors helping your score</li>
+                    <li>Risk factors hurting your score</li>
+                    <li>Your total assets, cash, property value, and debt</li>
+                    <li>Your payment history</li>
+                </ul>
+
+                <div class="alert alert-success">
+                    <strong>✓ How to Improve Your Credit:</strong>
+                    <ol style="margin-bottom: 0;">
+                        <li>Pay loans <strong>on time</strong> (payment history is 30%)</li>
+                        <li>Pay off loans to show you can repay debt</li>
+                        <li>Keep your debt low relative to assets</li>
+                        <li>Don't borrow more than 30% of available credit</li>
+                        <li>Build up cash reserves (liquidity)</li>
+                        <li>Avoid defaults and late payments</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Properties & Auctions -->
+            <section id="properties" class="mb-5">
+                <h2>Properties, Improvements & Auctions</h2>
+                
+                <h5>Owning Properties</h5>
+                <p>Properties are core to building wealth. You can own multiple properties and benefit from their rental income.</p>
+                <ul>
+                    <li><strong>View All Properties:</strong> Go to <strong>Properties</strong> to see all properties, their owner, rent, and improvements.</li>
+                    <li><strong>Rent:</strong> If you land on someone else's property, you can pay rent from their property page.</li>
+                    <li><strong>Owner Benefits:</strong> When others pay rent on your properties, money goes to your account.</li>
+                    <li><strong>Full Color Sets:</strong> If you own all properties of the same color, you can build improvements (houses/hotels).</li>
+                </ul>
+
+                <h5>Building Improvements</h5>
+                <p>Add houses and hotels to increase rent. You must own the <strong>complete color set</strong> before building.</p>
+                <ul>
+                    <li><strong>Add Building:</strong> Click the property and select "Add Building". The cost is set by the banker (typically $100-200).</li>
+                    <li><strong>Increased Rent:</strong> Each improvement level increases what players pay you for landing on your property.</li>
+                    <li><strong>Remove Building:</strong> Sell buildings back to the bank for half their cost if you need cash.</li>
+                    <li><strong>Mortgaging Note:</strong> You cannot have improvements on a mortgaged property.</li>
+                </ul>
+
+                <h5>Mortgaging Properties</h5>
+                <p>Use properties as collateral to get quick cash from the bank.</p>
+                <ul>
+                    <li><strong>Mortgage:</strong> Click property → "Mortgage This Property". You get 50% of the property's value in cash.</li>
+                    <li><strong>Unmortgage:</strong> Pay back the mortgage amount plus interest (set by banker) to reclaim the property.</li>
+                    <li><strong>Mortgage Costs:</strong> The interest rate is set on the home page by the banker (often 10%).</li>
+                    <li><strong>Restriction:</strong> Mortgaged properties cannot generate improvements.</li>
+                </ul>
+
+                <h5>Auctions</h5>
+                <p>Put properties up for auction to sell them quickly to other players.</p>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><strong>Starting an Auction</strong></div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Go to your property page</li>
+                            <li>Click "Create Auction"</li>
+                            <li>Set a starting bid (often 50% of property value)</li>
+                            <li>Players now see it in the <strong>Auctions</strong> page</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><strong>Bidding on Auctions</strong></div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Go to <strong>Auctions</strong> page to see all active auctions</li>
+                            <li>Click on a property to view its details and bid history</li>
+                            <li>Enter your bid amount and place it</li>
+                            <li>The highest bidder when the auction completes wins the property</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><strong>Completing an Auction</strong></div>
+                    <div class="card-body">
+                        <p>The seller (or banker) can complete the auction at any time:</p>
+                        <ol>
+                            <li>Winning bidder's money transfers to the seller</li>
+                            <li>Property transfers to the highest bidder</li>
+                            <li>If no bids, auction ends with no transfer</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section id="faq" class="mb-5">
+                <h2>Frequently Asked Questions</h2>
+                
+                <div class="accordion" id="faqAccordion">
+                    <div class="card">
+                        <div class="card-header" id="faq1">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse1">
+                                    What should I do if my loan is overdue?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse1" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Pay as soon as possible! Late fees are $25 per turn. If you miss 2+ payment periods, your loan auto-defaults, which seriously damages your credit. Talk to your banker if you need help—they can restructure your loan or work out a settlement.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header" id="faq2">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse2">
+                                    Can I recover from a defaulted loan?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse2" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Yes! A defaulted loan blocks new borrowing until it's resolved. To resolve it, make a settlement payment toward the loan balance. Once fully paid, the default is resolved and your credit can recover over time.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header" id="faq3">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse3">
+                                    Why was my loan application denied?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse3" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Check your credit report to see risk factors. Common reasons: active defaulted loans, low credit score, or requesting more than your limit. The banker can also manually deny loans or suggest alternatives.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header" id="faq4">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse4">
+                                    How does mortgaging work?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse4" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Mortgage a property to get 50% of its value in cash. You'll owe that amount back plus interest (set by banker). To reclaim it, pay back the mortgage + interest. Mortgaged properties can't generate rent or improvements.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq5">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse5">
+                                    What's the best strategy to build credit?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse5" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                <strong>1. Start small:</strong> Borrow modest amounts you can comfortably pay back. <strong>2. Pay on time:</strong> This is 30% of your score. <strong>3. Build assets:</strong> Accumulate properties and cash. <strong>4. Avoid defaults:</strong> They're hard to recover from. <strong>5. Stay active:</strong> Regular, consistent payments show stability.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq6">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse6">
+                                    How do I know when my payment is due?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse6" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Each loan shows "Next Payment Due: Turn X" on the Loans page. This is the turn you must pay by to avoid late fees. The payment interval (e.g., every 3 turns) is set when you take the loan.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq7">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse7">
+                                    Can I pay more than the minimum payment?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse7" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                Yes! You can pay any amount toward your loan. Paying extra reduces your balance faster and saves interest. If you pay off the entire balance, your loan is marked as paid off and your credit score improves.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq8">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse8">
+                                    What's compound vs. simple interest?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse8" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                <strong>Compound Interest:</strong> Interest is added to your balance, so you pay interest on top of interest (grows faster). <strong>Simple Interest:</strong> Interest is calculated once and doesn't compound. Simple interest is easier to predict. The banker decides which type is used for loans.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq9">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse9">
+                                    Can other players see my credit report?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse9" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                No. Only you and the banker can view your credit report. Other players can't see your score, assets, or financial details (except through gameplay when you don't pay rent or loans!).
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" id="faq10">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse10">
+                                    What does the banker control?
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapse10" class="collapse" data-parent="#faqAccordion">
+                            <div class="card-body">
+                                The banker controls: game turns (when they advance), interest rates (mortgages and loans), minimum credit score for borrowing, max loan amounts, building costs, and can manually approve/deny loans. They're the final authority in the game!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <hr>
+
+            <p class="text-muted small">
+                <strong>Note:</strong> Credit scores include ±1% random variation to reflect minor real-world variability. Your score may fluctuate very slightly even with consistent behavior, but major changes indicate actual financial shifts.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Bootstrap accordion functionality
+    document.querySelectorAll('[data-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetSelector = this.getAttribute('data-target');
+            const targetCollapse = document.querySelector(targetSelector);
+            
+            if (!targetCollapse) return;
+            
+            // Get the accordion container
+            const accordion = this.closest('.accordion');
+            if (!accordion) return;
+            
+            // Get all collapse items in this accordion
+            const allCollapses = accordion.querySelectorAll('.collapse');
+            
+            // Close all other collapse items (accordion behavior)
+            allCollapses.forEach(collapse => {
+                if (collapse !== targetCollapse && collapse.classList.contains('show')) {
+                    collapse.classList.remove('show');
+                }
+            });
+            
+            // Toggle the target collapse
+            targetCollapse.classList.toggle('show');
+        });
+    });
+</script>
+{% endblock %}
