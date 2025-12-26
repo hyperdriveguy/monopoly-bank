@@ -2,7 +2,7 @@ import secrets
 from urllib.parse import urljoin, urlparse
 
 from flask import (Flask, Response, redirect, render_template, request,
-                   stream_with_context, flash, get_flashed_messages, abort, url_for)
+                   stream_with_context, flash, get_flashed_messages, abort, url_for, jsonify)
 from flask_login import (LoginManager, login_required, login_user,
                          logout_user, current_user)
 from markupsafe import escape
@@ -14,6 +14,8 @@ from property_manger import PropertyManager
 from auction_store import AuctionManager
 
 from loan_store import LoanManager
+
+from stock_manager import StockManager
 
 # TODO: Remove this
 TEMP_PASSWORD = 'temp'
@@ -112,6 +114,8 @@ if __name__ == '__main__':
 
     managed_loans = LoanManager(managed_accs.tlog_connection, managed_accs)
 
+    managed_stocks = StockManager('stock_data.json', managed_accs.tlog_connection)
+
     # Load current turn from database
     saved_turn = managed_accs.tlog_connection.get_game_state('current_turn')
     if saved_turn is not None:
@@ -185,10 +189,25 @@ if __name__ == '__main__':
                     from loan_store import Loan
                     Loan._current_turn = game_state['current_turn']
                     
+                    # Process stock market turn (news, price updates, dividends)
+                    managed_stocks.process_turn(game_state['current_turn'], managed_accs)
+                    stock_messages = []
+                    
+                    # Report active news events
+                    active_news = managed_stocks.get_active_news()
+                    if active_news:
+                        stock_messages.append(f"📰 {len(active_news)} active news event(s)")
+                    
+                    # Report dividends paid
+                    if managed_stocks.dividend_paid_this_turn:
+                        div_count = len(managed_stocks.dividend_paid_this_turn)
+                        total_div = sum(d['total'] for d in managed_stocks.dividend_paid_this_turn.values())
+                        stock_messages.append(f"💰 Dividends paid to {div_count} players (${total_div} total)")
+                    
                     # Apply late fees to overdue loans and check for auto-defaults
                     late_fees_charged, auto_defaulted = managed_loans.apply_late_fees_all()
                     
-                    messages = []
+                    messages = stock_messages
                     if late_fees_charged:
                         fee_messages = [f"{borrower}: ${amount}" for borrower, amount in late_fees_charged.items()]
                         messages.append(f'Late fees applied: {", ".join(fee_messages)}')
@@ -339,7 +358,10 @@ if __name__ == '__main__':
                     'rating_class': report.rating.value.lower().replace(' ', '-')
                 }
 
-        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log, loans=account_loans, credit_info=credit_info)
+        # Get portfolio for this account
+        portfolio = managed_stocks.get_player_portfolio(ident)
+
+        return render_generic('individual_account.html.jinja', acc=target_account, account_log=account_log, loans=account_loans, credit_info=credit_info, portfolio=portfolio)
 
     @app.route('/change-cash', methods=['GET', 'POST'])
     @login_required
@@ -490,6 +512,102 @@ if __name__ == '__main__':
 
         user_name = str(current_user.ident if not current_user.is_anonymous else '')
         return {'property': managed_props.properties[prop_name].json, 'request': request.json, 'user': user_name}
+
+
+    # Stock market / Investments pages
+    @app.route('/investments/')
+    def investments_page():
+        """
+        Display stock market overview and player's portfolio.
+        """
+        portfolio = []
+        portfolio_value = 0
+        
+        if not current_user.is_anonymous:
+            portfolio = managed_stocks.get_player_portfolio(current_user.ident)
+            portfolio_value = sum(stock['value'] for stock in portfolio)
+        
+        stocks = managed_stocks.get_all_stocks()
+        news = managed_stocks.get_active_news()
+        market_index = managed_stocks.market_index()
+        
+        return render_generic('investments.html.jinja',
+                            stocks=stocks,
+                            portfolio=portfolio,
+                            portfolio_value=round(portfolio_value, 2),
+                            market_index=round(market_index, 2),
+                            active_news=news)
+
+
+    @app.route('/investments/api', methods=['POST'])
+    def investments_api():
+        """
+        API endpoint for buying/selling stocks.
+        """
+        print("DEBUG: investments_api called")
+        try:
+            if current_user.is_anonymous:
+                print("DEBUG: User is anonymous")
+                return jsonify({'success': False, 'message': 'Must be logged in to trade.'}), 401
+            
+            print(f"DEBUG: Request json: {request.json}")
+            action = request.json.get('action', '')
+            stock_name = request.json.get('stock_name', '')
+            num_shares = request.json.get('num_shares', 0)
+            
+            try:
+                num_shares = int(num_shares)
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid number of shares.'}), 400
+            
+            if num_shares <= 0:
+                return jsonify({'success': False, 'message': 'Number of shares must be positive.'}), 400
+            
+            if action == 'buy':
+                print(f"DEBUG: Buying {num_shares} of {stock_name}")
+                success, message = managed_stocks.buy_stock(
+                    current_user.ident,
+                    stock_name,
+                    num_shares,
+                    managed_accs
+                )
+                print(f"DEBUG: Buy result: {success}, {message}")
+                if success:
+                    flash(message)
+                    return jsonify({
+                        'success': True,
+                        'message': message,
+                        'portfolio': managed_stocks.get_player_portfolio(current_user.ident)
+                    }), 200
+            elif action == 'sell':
+                print(f"DEBUG: Selling {num_shares} of {stock_name}")
+                success, message = managed_stocks.sell_stock(
+                    current_user.ident,
+                    stock_name,
+                    num_shares,
+                    managed_accs
+                )
+                print(f"DEBUG: Sell result: {success}, {message}")
+                if success:
+                    flash(message)
+                    return jsonify({
+                        'success': True,
+                        'message': message,
+                        'portfolio': managed_stocks.get_player_portfolio(current_user.ident)
+                    }), 200
+            else:
+                return jsonify({'success': False, 'message': 'Invalid action.'}), 400
+            
+            return jsonify({
+                'success': success,
+                'message': message
+            }), 400
+        
+        except Exception as e:
+            import traceback
+            print(f"Error in investments_api: {e}")
+            traceback.print_exc()
+            return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 
     # Help page - Credit system documentation
@@ -930,6 +1048,8 @@ if __name__ == '__main__':
         for m in managed_auctions.cleanup():
             print(m)
         for m in managed_loans.cleanup():
+            print(m)
+        for m in managed_stocks.cleanup():
             print(m)
 
 

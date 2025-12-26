@@ -2,3 +2,6 @@ Jinja2
 Werkzeug
 itsdangerous
 click
+Flask
+Flask-Login
+numpy

@@ -422,3 +422,26 @@ class TransactionLog:
         trans_type = 'Loan Erased'
         info = f'Loan ID: {loan_id} - ERASED, Forgave: ${amount}'
         self._send_transaction_to_listener(trans_type, borrower_id, info)
+
+    def log_stock_buy(self, player_id, stock_name, num_shares, price_per_share, total_cost):
+        """Log a stock purchase."""
+        trans_type = 'Stock Buy'
+        info = f'Bought {num_shares} shares of {stock_name} @ ${price_per_share:.2f}/share = ${total_cost:.2f}'
+        self._send_transaction_to_listener(trans_type, player_id, info)
+
+    def log_stock_sell(self, player_id, stock_name, num_shares, price_per_share, total_proceeds):
+        """Log a stock sale."""
+        trans_type = 'Stock Sell'
+        info = f'Sold {num_shares} shares of {stock_name} @ ${price_per_share:.2f}/share = ${total_proceeds:.2f}'
+        self._send_transaction_to_listener(trans_type, player_id, info)
+
+    def log_dividend_payment(self, player_id, total_dividend, dividends_breakdown):
+        """Log dividend payments received. dividends_breakdown is a list of {stock, shares, per_share, amount}."""
+        trans_type = 'Dividend'
+        if dividends_breakdown:
+            details = '; '.join([f"{d['stock']}({d['shares']} @ ${d['per_share']}) = ${d['amount']}" for d in dividends_breakdown])
+            info = f'Received ${total_dividend} in dividends: {details}'
+        else:
+            info = f'Received ${total_dividend} in dividends'
+        self._send_transaction_to_listener(trans_type, player_id, info)
+

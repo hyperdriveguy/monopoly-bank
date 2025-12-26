@@ -90,6 +90,41 @@
         <input type="submit" value="Submit">
     </form>
 </div>
+
+<!-- Portfolio Section -->
+{% if portfolio %}
+<div style="background: white; padding: 20px; border-radius: 8px; margin: 1.5em 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <h3>Your Portfolio</h3>
+    <table class="portfolio-table">
+        <thead>
+            <tr>
+                <th>Stock</th>
+                <th>Sector</th>
+                <th>Shares</th>
+                <th>Price</th>
+                <th>Avg Buy Price</th>
+                <th>Value</th>
+                <th>Dividend/Share</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in portfolio %}
+            <tr class="portfolio-item">
+                <td data-label="Stock"><strong>{{ stock.name }}</strong></td>
+                <td data-label="Sector">{{ stock.sector }}</td>
+                <td data-label="Shares">{{ stock.shares }}</td>
+                <td data-label="Price">${{ stock.price }}</td>
+                <td data-label="Avg Buy Price">{% if stock.avg_purchase_price %}${{ stock.avg_purchase_price }}{% else %}-{% endif %}</td>
+                <td data-label="Value">${{ stock.value }}</td>
+                <td data-label="Dividend">${{ stock.dividend }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="text-align: center; margin-top: 1em;"><a href="{{ url_for('investments_page') }}" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Go to Stock Market</a> to trade stocks</p>
+</div>
+{% endif %}
+
 <h3>Properties</h3>
 <section class="account-list">
     {% for prop in acc.properties %}

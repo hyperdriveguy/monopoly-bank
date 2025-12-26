@@ -1,0 +1,136 @@
+{% extends "sidebar.html.jinja" %}
+
+{% block title %}Investments{% endblock %}
+
+{% block content %}
+<div class="container investments-page">
+    <h1>Stock Market</h1>
+    
+    <div class="market-overview">
+        <div class="market-stats">
+            <div class="stat-card">
+                <h3>Market Index</h3>
+                <p class="market-index">${{ market_index }}</p>
+            </div>
+            {% if logged_in %}
+            <div class="stat-card">
+                <h3>Portfolio Value</h3>
+                <p class="portfolio-value">${{ portfolio_value }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Holdings</h3>
+                <p class="holdings-count">{{ portfolio|length }} stocks</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active News Events -->
+    {% if active_news %}
+    <div class="news-section">
+        <h2>Market News</h2>
+        <div class="news-feed">
+            {% for event in active_news %}
+            <div class="news-item {% if event.impact < 0 %}negative{% elif event.impact > 0 %}positive{% else %}neutral{% endif %}">
+                <span class="news-impact">
+                    {% if event.impact > 0 %}+{% endif %}{{ (event.impact * 100)|int }}%
+                </span>
+                <span class="news-description">{{ event.description }}</span>
+                {% if event.affected_sector %}
+                    <span class="news-sector">({{ event.affected_sector }} sector)</span>
+                {% elif event.affected_stock %}
+                    <span class="news-stock">({{ event.affected_stock }})</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Player Portfolio -->
+    {% if logged_in and portfolio %}
+    <div class="portfolio-section">
+        <h2>Your Portfolio</h2>
+        <table class="portfolio-table">
+            <thead>
+                <tr>
+                    <th>Stock</th>
+                    <th>Sector</th>
+                    <th>Shares</th>
+                    <th>Price</th>
+                    <th>Avg Buy Price</th>
+                    <th>Value</th>
+                    <th>Dividend/Share</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in portfolio %}
+                <tr class="portfolio-item">
+                    <td data-label="Stock"><strong>{{ stock.name }}</strong></td>
+                    <td data-label="Sector">{{ stock.sector }}</td>
+                    <td data-label="Shares">{{ stock.shares }}</td>
+                    <td data-label="Price">${{ stock.price }}</td>
+                    <td data-label="Avg Buy Price">{% if stock.avg_purchase_price %}${{ stock.avg_purchase_price }}{% else %}-{% endif %}</td>
+                    <td data-label="Value">${{ stock.value }}</td>
+                    <td data-label="Dividend">${{ stock.dividend }}</td>
+                    <td data-label="Action">
+                        <form class="sell-form" data-stock-name="{{ stock.name }}">
+                            <input type="hidden" name="action" value="sell">
+                            <input type="number" name="num_shares" min="1" max="{{ stock.shares }}" value="1" placeholder="Shares">
+                            <button type="submit" class="btn-sell">Sell</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Available Stocks -->
+    <div class="stocks-section">
+        <h2>Available Stocks</h2>
+        <div class="stocks-grid">
+            {% for stock_name, stock in stocks.items() %}
+            <div class="stock-card">
+                <div class="stock-header">
+                    <h3>{{ stock_name }}</h3>
+                    <span class="stock-sector">{{ stock.sector }}</span>
+                </div>
+                
+                <div class="stock-price">
+                    <span class="price">${{ stock.price }}</span>
+                    <span class="dividend">+${{ stock.dividend }} div</span>
+                </div>
+
+                <div class="stock-chart">
+                    <canvas id="chart-{{ stock_name }}" class="price-history" data-history="{{ stock.history|tojson }}"></canvas>
+                </div>
+
+                <div class="stock-info">
+                    <p><strong>Volatility:</strong> {{ (stock.volatility * 100)|int }}%</p>
+                    <p><strong>Dividend:</strong> ${{ stock.dividend }}/share</p>
+                    {% if stock.shares_owned and stock.shares_owned[user_id] %}
+                    <p><strong>You own:</strong> {{ stock.shares_owned[user_id] }} shares</p>
+                    {% endif %}
+                </div>
+
+                {% if logged_in %}
+                <form class="buy-form" data-stock-name="{{ stock_name }}">
+                    <input type="hidden" name="action" value="buy">
+                    <input type="number" name="num_shares" min="1" value="1" placeholder="Shares to buy" required>
+                    <button type="submit" class="btn-buy">Buy</button>
+                </form>
+                {% else %}
+                <p class="login-prompt"><a href="/login">Log in</a> to trade stocks</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/investments.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,136 @@
+{
+  "sectors": [
+    {
+      "name": "Tech",
+      "mu": 0.02
+    },
+    {
+      "name": "Defense",
+      "mu": 0.005
+    },
+    {
+      "name": "Finance",
+      "mu": 0.01
+    },
+    {
+      "name": "Energy",
+      "mu": 0.008
+    },
+    {
+      "name": "Retail",
+      "mu": 0.012
+    }
+  ],
+  "stocks": [
+    {
+      "name": "GraySlate",
+      "sector": "Finance",
+      "price": 150.0,
+      "volatility": 0.06,
+      "dividend": 2.5,
+      "shares_owned": {},
+      "history": [148, 149, 150, 151, 150, 152, 151, 150, 149, 150, 151, 152, 150, 149, 148, 149, 150, 151, 150, 149]
+    },
+    {
+      "name": "Lasertheus",
+      "sector": "Defense",
+      "price": 85.0,
+      "volatility": 0.04,
+      "dividend": 1,
+      "shares_owned": {},
+      "history": [82, 83, 84, 85, 86, 85, 84, 85, 86, 85, 84, 83, 84, 85, 86, 85, 84, 85, 86, 85]
+    },
+    {
+      "name": "FaceGram",
+      "sector": "Tech",
+      "price": 120.0,
+      "volatility": 0.07,
+      "dividend": 1.2,
+      "shares_owned": {},
+      "history": [115, 117, 118, 120, 121, 119, 120, 121, 122, 120, 119, 120, 121, 122, 123, 124, 122, 121, 120, 119]
+    },
+    {
+      "name": "CoinBar",
+      "sector": "Tech",
+      "price": 60.0,
+      "volatility": 0.1,
+      "dividend": 0,
+      "shares_owned": {},
+      "history": [50, 52, 55, 60, 62, 58, 60, 63, 65, 64, 62, 61, 60, 62, 63, 65, 66, 64, 63, 62]
+    },
+    {
+      "name": "PowerPipe",
+      "sector": "Energy",
+      "price": 75.0,
+      "volatility": 0.03,
+      "dividend": 1.5,
+      "shares_owned": {},
+      "history": [70, 71, 72, 73, 74, 75, 76, 75, 74, 73, 72, 71, 72, 73, 74, 75, 76, 75, 74, 75]
+    },
+    {
+      "name": "RetailMart",
+      "sector": "Retail",
+      "price": 40.0,
+      "volatility": 0.05,
+      "dividend": 1.2,
+      "shares_owned": {},
+      "history": [38, 39, 40, 41, 42, 41, 40, 39, 40, 41, 42, 41, 40, 39, 40, 41, 42, 41, 40, 39]
+    }
+  ],
+  "news_events": [
+    {
+      "description": "2008 financial meltdown echoes: GraySlate collapses, banks panic",
+      "impact": -0.25,
+      "affected_sector": "Finance",
+      "duration": 3
+    },
+    {
+      "description": "Tech bubble bursts: FaceGram and CoinBar tumble",
+      "impact": -0.2,
+      "affected_sector": "Tech",
+      "duration": 2
+    },
+    {
+      "description": "Laser weapons boom: Lasertheus signs massive defense contract",
+      "impact": 0.15,
+      "affected_sector": "Defense",
+      "duration": 2
+    },
+    {
+      "description": "Energy spike: PowerPipe profits off unexpected mining boom",
+      "impact": 0.12,
+      "affected_sector": "Energy",
+      "duration": 2
+    },
+    {
+      "description": "Retail surge: RetailMart expands online, sales soar",
+      "impact": 0.1,
+      "affected_sector": "Retail",
+      "duration": 2
+    },
+    {
+      "description": "Crypto crash: CoinBar collapses after regulatory crackdown",
+      "impact": -0.3,
+      "affected_stock": "CoinBar",
+      "duration": 3
+    },
+    {
+      "description": "Social media scandal: FaceGram fined, stock tumbles",
+      "impact": -0.18,
+      "affected_stock": "FaceGram",
+      "duration": 2
+    },
+    {
+      "description": "Military contract scandal: Lasertheus faces lawsuits",
+      "impact": -0.12,
+      "affected_stock": "Lasertheus",
+      "duration": 2
+    },
+    {
+      "description": "Energy regulation relaxed: PowerPipe surges",
+      "impact": 0.08,
+      "affected_stock": "PowerPipe",
+      "duration": 2
+    }
+  ]
+}
